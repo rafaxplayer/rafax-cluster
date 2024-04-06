@@ -2,11 +2,10 @@ const { registerBlockType } = wp.blocks;
 const { withSelect } = wp.data;
 const { Fragment } = wp.element;
 const { __ } = wp.i18n;
-const { PanelBody, Spinner, Placeholder, ToggleControl, TextControl, SelectControl, FormTokenField } = wp.components;
-const { InspectorControls } = wp.blockEditor;
+const { PanelBody, Spinner, Placeholder, ToggleControl, TextControl, SelectControl, FormTokenField, Disabled, } = wp.components;
+const { InspectorControls, useBlockProps } = wp.blockEditor;
 import { ReactComponent as Logo } from '../cluster.svg';
-
-
+import ServerSideRender from '@wordpress/server-side-render';
 registerBlockType('rafax/cluster-entradas', {
 
 	title: __('Rafax Cluster Entradas', 'rafax-cluster'),
@@ -31,7 +30,7 @@ registerBlockType('rafax/cluster-entradas', {
 		},
 	},
 	edit: withSelect((select, { clientId }) => {
-		let selectCore = select( 'core' );
+		let selectCore = select('core');
 		const { getEditedPostAttribute } = select('core/editor');
 		const postId = getEditedPostAttribute('id');
 		const { category, numberPosts, excludePosts } = select('core/block-editor').getBlock(clientId).attributes;
@@ -53,8 +52,10 @@ registerBlockType('rafax/cluster-entradas', {
 			selectedPosts: selectCore.getEntityRecords('postType', 'post', queryArgs),
 			allPosts: selectCore.getEntityRecords('postType', 'post', { per_page: -1 }),
 		};
-	})(({ postId,categories, selectedPosts, allPosts, attributes, setAttributes }) => {
-
+	})(({ categories, selectedPosts, allPosts, attributes, setAttributes }) => {
+		const blockProps = useBlockProps({
+			className: '-dynamic-block',
+		});
 		if (!categories || !selectedPosts || !allPosts) {
 			return (
 				<div className="rafax-cluster-spinner">
@@ -84,7 +85,6 @@ registerBlockType('rafax/cluster-entradas', {
 				return wantedPost.title.raw;
 			});
 		}
-
 		return (
 			<Fragment>
 				<InspectorControls>
@@ -102,7 +102,7 @@ registerBlockType('rafax/cluster-entradas', {
 							value={attributes.numberPosts}
 							onChange={(value) => {
 
-								setAttributes({ numberPosts: undefined === value ? '' : value })
+								setAttributes({ numberPosts: undefined === value ? -1 : value })
 							}}
 						/>
 						<FormTokenField
@@ -129,7 +129,7 @@ registerBlockType('rafax/cluster-entradas', {
 										}
 									}
 								)
-								setAttributes({ excludePosts:selectedPostsArray });
+								setAttributes({ excludePosts: selectedPostsArray });
 							}}
 						/>
 						<SelectControl
@@ -145,29 +145,17 @@ registerBlockType('rafax/cluster-entradas', {
 					</PanelBody>
 				</InspectorControls>
 				<Placeholder
-					icon="admin-post"
-					label={__('Rafax Cluster', 'rafax-cluster')}
+					icon="feedback"
+					label={__('Rafax Cluster de Entradas', 'rafax-cluster')}
 					instructions={__('Selecciona las opciones para mostrar las entradas en el clusterr.', 'rafax-cluster')}
 				>
-					
-					<div className="cluster grid-cols-3 style-4">
-						{selectedPosts.map(post => (
-							<>
-								<a id={post.id} href={post.guid.rendered} className="post-grid-item vertical">
-									<div className="thumb">
-										{attributes.showFeaturedImage && <img src={post.image_post} alt={post.title.rendered} />}
-
-									</div>
-									<div className="content">
-										<div className="title" >
-											<h3>{post.title.rendered}</h3>
-										</div>
-									</div>
-
-								</a>
-							</>
-						))}
-					</div>
+					<Disabled>
+						<ServerSideRender
+							block={'rafax/cluster-entradas'}
+							skipBlockSupportAttributes
+							attributes={attributes}
+						/>
+					</Disabled>
 				</Placeholder>
 			</Fragment >
 		);

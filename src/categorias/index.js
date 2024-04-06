@@ -1,13 +1,14 @@
 const { registerBlockType } = wp.blocks;
 const { __ } = wp.i18n;
-import { ReactComponent as Logo } from '../cluster.svg';
 const { withSelect } = wp.data;
 const { Fragment } = wp.element;
-const { PanelBody, Spinner, Placeholder, ToggleControl, TextControl, FormTokenField } = wp.components;
+const { PanelBody, Spinner, Placeholder, ToggleControl, TextControl, SelectControl, FormTokenField,Disabled } = wp.components;
 const { InspectorControls } = wp.blockEditor;
+import ServerSideRender from '@wordpress/server-side-render';
+import { ReactComponent as Logo } from '../cluster.svg';
 
 registerBlockType('rafax/cluster-categorias', {
-    title: __('Rafax Cluster de categorias', 'rafax-cluster'),
+    title: __('Rafax Cluster de categorías', 'rafax-cluster'),
     icon: { src: Logo },
     category: 'widgets',
     attributes: {
@@ -15,7 +16,7 @@ registerBlockType('rafax/cluster-categorias', {
             type: 'boolean',
             default: false
         },
-        showParent:{
+        showParent: {
             type: 'string',
             default: 0
         },
@@ -31,7 +32,15 @@ registerBlockType('rafax/cluster-categorias', {
             type: 'array',
             default: []
         },
-        targetBlank:{
+        showDescription: {
+            type: 'boolean',
+            default: false
+        },
+        showCount: {
+            type: 'boolean',
+            default: false
+        },
+        targetBlank: {
             type: 'boolean',
             default: false
         }
@@ -42,13 +51,13 @@ registerBlockType('rafax/cluster-categorias', {
 
         let selectCore = select('core');
 
-        const { showOnlyParent, excludeCats, hideEmpty, numberCats,showParent } = select('core/block-editor').getBlock(clientId).attributes;
+        const { showOnlyParent, excludeCats, hideEmpty, numberCats, showParent } = select('core/block-editor').getBlock(clientId).attributes;
+
 
         let queryArgs = {
             hide_empty: hideEmpty,
             per_page: numberCats > 0 ? numberCats : -1,
             exclude: excludeCats,
-            
         };
 
         if (showOnlyParent) {
@@ -56,11 +65,11 @@ registerBlockType('rafax/cluster-categorias', {
             queryArgs.parent = 0;
         }
 
-        if (showParent>0) {
+        if (showParent > 0) {
 
             queryArgs.parent = showParent;
         }
-        
+
 
         return {
 
@@ -69,9 +78,9 @@ registerBlockType('rafax/cluster-categorias', {
 
         };
 
-    })(({ allCategories, categories, attributes, setAttributes }) => {
+    })(({ allCategories, categories, attributes, setAttributes, blockProps }) => {
 
-        console.log(categories);
+
         if (!categories) {
             return (
                 <div className="rafax-cluster-spinner">
@@ -82,6 +91,8 @@ registerBlockType('rafax/cluster-categorias', {
         }
         let catsNames = [];
         let catsFieldValue = [];
+        let categoryOptions = [];
+
         if (allCategories !== null) {
             catsNames = allCategories.map((cat) => cat.name);
 
@@ -94,25 +105,29 @@ registerBlockType('rafax/cluster-categorias', {
                 }
                 return wantedCat.name;
             });
-        }
 
+            categoryOptions = allCategories.map(category => ({
+                label: category.name,
+                value: category.id,
+            }));
+        }
         return (
             <Fragment>
                 <InspectorControls>
-                    <PanelBody title={__('Opciones cluster Categorias', 'rafax-cluster')} initialOpen={true}>
+                    <PanelBody title={__('Opciones cluster categorías', 'rafax-cluster')} initialOpen={true}>
                         <ToggleControl
-                            label={__('Mostrar solo categorias padre', 'rafax-cluster')}
+                            label={__('Mostrar solo categorías padre', 'rafax-cluster')}
                             checked={attributes.showOnlyParent}
                             onChange={(value) => setAttributes({ showOnlyParent: value })}
                         />
                         <ToggleControl
-                            label={__('Ocultar categorias vacias', 'rafax-cluster')}
+                            label={__('Ocultar categorías vacias', 'rafax-cluster')}
                             checked={attributes.hideEmpty}
                             onChange={(value) => setAttributes({ hideEmpty: value })}
                         />
                         <TextControl
                             label={__(
-                                'Numero de categorias a devolver',
+                                'Numero de categorías a devolver',
                                 'rafax-cluster'
                             )}
                             help={__(
@@ -125,80 +140,87 @@ registerBlockType('rafax/cluster-categorias', {
                                 setAttributes({ numberCats: undefined === value ? 0 : value })
                             }}
                         />
-                        <TextControl
+                        <SelectControl
                             label={__(
-                                'Mostrar categorias hijo de ',
+                                'Mostrar categorías hijo de ',
                                 'rafax-cluster'
                             )}
                             help={__(
-                                'Id de la categoria padre',
+                                'Id de la categoría padre',
                                 'rafax-cluster'
                             )}
                             value={attributes.showParent}
+                            options={[
+                                { label: __('Buscar categoría', 'rafax-cluster'), value: 0 },
+                                ...categoryOptions
+                                // Agrega más opciones de categorías según sea necesario
+                            ]}
                             onChange={(value) => {
 
                                 setAttributes({ showParent: undefined === value ? 0 : value })
                             }}
                         />
                         <FormTokenField
-							label={__(
-								'Excluir Categorias',
-								'rafax-cluster'
-							)}
-							help={__(
-								'Incluye la id de las categorias a excluir separadas por coma',
-								'rafax-cluster'
-							)}
-							value={catsFieldValue}
-							suggestions={catsNames}
-							onChange={(cats) => {
-								// Build array of selected posts.
-								let selectedCatsArray = [];
-								cats.map(
-									(catName) => {
-										const matchingCat = allCategories.find((cat) => {
-											return cat.name === catName;
-										});
-										if (matchingCat !== undefined) {
-											selectedCatsArray.push(matchingCat.id);
-										}
-									}
-								)
-								setAttributes({ excludeCats:selectedCatsArray });
-							}}
-						/> 
+                            label={__(
+                                'Excluir categorías',
+                                'rafax-cluster'
+                            )}
+                            help={__(
+                                'Busca las categorías a excluir',
+                                'rafax-cluster'
+                            )}
+                            value={catsFieldValue}
+                            suggestions={catsNames}
+                            onChange={(cats) => {
+                                // Build array of selected posts.
+                                let selectedCatsArray = [];
+                                cats.map(
+                                    (catName) => {
+                                        const matchingCat = allCategories.find((cat) => {
+                                            return cat.name === catName;
+                                        });
+                                        if (matchingCat !== undefined) {
+                                            selectedCatsArray.push(matchingCat.id);
+                                        }
+                                    }
+                                )
+                                setAttributes({ excludeCats: selectedCatsArray });
+                            }}
+                        />
+                    </PanelBody>
+                    <PanelBody title={__('Opciones de visualizacion', 'rafax-cluster')} initialOpen={true}>
                         <ToggleControl
+
                             label={__('Abrir enlaces en una nueva ventana', 'rafax-cluster')}
                             checked={attributes.targetBlank}
                             onChange={(value) => setAttributes({ targetBlank: value })}
                         />
+                        <ToggleControl
+                            label={__('Mostrar contador de entradas', 'rafax-cluster')}
+                            checked={attributes.showCount}
+                            onChange={(value) => setAttributes({ showCount: value })}
+                        />
+                        <ToggleControl
 
+                            label={__('Mostrar descripción de la categoría', 'rafax-cluster')}
+                            checked={attributes.showDescription}
+                            onChange={(value) => setAttributes({ showDescription: value })}
+                        />
                     </PanelBody>
                 </InspectorControls>
                 <Placeholder
-                    icon="admin-post"
-                    label={__('Rafax Cluster categorias', 'rafax-cluster')}
-                    instructions={__('Selecciona las opciones para mostrar las categoriass en el clusterr.', 'rafax-cluster')}
+                    icon="category"
+                    label={__('Rafax Cluster categorías', 'rafax-cluster')}
+                    instructions={__('Selecciona las opciones para mostrar las categorías en el cluster.', 'rafax-cluster')}
                 >
-                    <div className="cluster grid-cols-3 style-4">
-                        {categories.map(cat => (
-                            <>
-                                <a id={cat.id} {...(attributes.targetBlank ? { target: "_blank" } : {})} href={cat.link} className="post-grid-item vertical">
-
-                                    <div className="content">
-                                        <div className="title" >
-                                            <h3>{cat.name + ' (' + cat.count + ')'} </h3>
-                                        </div>
-                                        <div className="description">
-                                            <p>{cat.description}</p>
-                                        </div>
-
-                                    </div>
-
-                                </a>
-                            </>
-                        ))}
-                    </div>
+                    <Disabled>
+                        <ServerSideRender
+                            block={'rafax/cluster-categorias'}
+                            skipBlockSupportAttributes 
+                            attributes={attributes}
+                        />
+                    </Disabled>
+                    
                 </Placeholder>
             </Fragment >
         );

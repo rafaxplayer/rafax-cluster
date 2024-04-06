@@ -1,7 +1,7 @@
 {
   "name": "rafax-cluster",
   "version": "0.1.0",
-  "description": "Bloque para crear clusters.",
+  "description": "Bloques para crear clusters.",
   "author": "Rafax",
   "license": "GPL-2.0-or-later",
   "main": "build/index.js",

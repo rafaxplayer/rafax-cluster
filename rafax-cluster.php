@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       Rafax Cluster
- * Description:       Example block scaffolded with Create Block tool.
+ * Description:       Bloques de gutemberg para crear cluster de categorias y posts.
  * Requires at least: 6.1
  * Requires PHP:      7.0
  * Version:           0.1.0
@@ -80,6 +80,10 @@ function rafax_cluster_block_init()
 					'type' => 'boolean',
 					'default' => false
 				),
+				'showCount' => array(
+					'type' => 'boolean',
+					'default' => false
+				),
 				'numberCats' => array(
 					'type' => 'string',
 					'default' => -1
@@ -97,6 +101,10 @@ function rafax_cluster_block_init()
 					'default' => 0
 				),
 				'targetBlank' => array(
+					'type' => 'boolean',
+					'default' => false
+				),
+				'showDescription' => array(
 					'type' => 'boolean',
 					'default' => false
 				)
@@ -133,20 +141,22 @@ function rafax_cluster_categorias_callback($attributes, $content)
 
 	if (!$categories) {
 
-		return 'No hay Categorias';
+		return 'No hay categorías';
 
 	}
 
 	$target = $attributes['targetBlank'] ? 'target="_blank"' : '';
 
-	$output = '<div class="cluster grid-cols-3 style-4">';
+	$output = '<div class="cluster cluster-cats grid-cols-3 style-4 ">';
 
 	foreach ($categories as $cat) {
+
 		$output .= '<a ' . $target . ' class="post-grid-item vertical" href="' . get_category_link($cat->term_id) . '">';
 		$output .= '<div class="content" >';
 		$output .= '<div class="title" >';
-		$output .= '<h3>' . $cat->name . ' (' . $cat->count . ')</h3> ';
+		$output .= '<h3>' . $cat->name . '</h3> ';
 		$output .= '</div>';
+		$output .= $attributes['showDescription'] ? '<div class="description" ><p>' . $cat->description . '</p></div> ' : '';
 		$output .= '</div>';
 		$output .= '</a>';
 
@@ -163,7 +173,7 @@ function rafax_cluster_entradas_callback($attributes)
 	error_log(print_r($attributes, true));
 
 	$args = array(
-		'numberposts' => $attributes['numberPosts'],
+		'numberposts' => $attributes['numberPosts'] > 0 ? $attributes['numberPosts'] : -1,
 		'exclude' => array_merge($attributes['excludePosts'], array($postId)),
 		'post_status' => 'publish',
 	);
@@ -171,11 +181,12 @@ function rafax_cluster_entradas_callback($attributes)
 	if ($attributes['category'] !== 'all') {
 		$args['category'] = $attributes['category'];
 	}
-	error_log(print_r($args, true));
+	//error_log(print_r($args, true));
 	$posts = get_posts($args);
+
 	//error_log( print_r( $posts, true ) );
 
-	$output = '<div class="cluster grid-cols-3 style-4">';
+	$output = '<div class="cluster cluster-posts grid-cols-3 style-4">';
 
 	foreach ($posts as $post) {
 		$output .= '<a id="' . $post->ID . '" href="' . get_the_permalink($post->ID) . '" class="post-grid-item vertical">';

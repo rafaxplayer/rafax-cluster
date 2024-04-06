@@ -43,7 +43,9 @@ var SvgCluster = function SvgCluster(props) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _cluster_svg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../cluster.svg */ "./src/cluster.svg");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _cluster_svg__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../cluster.svg */ "./src/cluster.svg");
 
 const {
   registerBlockType
@@ -51,7 +53,6 @@ const {
 const {
   __
 } = wp.i18n;
-
 const {
   withSelect
 } = wp.data;
@@ -64,15 +65,19 @@ const {
   Placeholder,
   ToggleControl,
   TextControl,
-  FormTokenField
+  SelectControl,
+  FormTokenField,
+  Disabled
 } = wp.components;
 const {
   InspectorControls
 } = wp.blockEditor;
+
+
 registerBlockType('rafax/cluster-categorias', {
-  title: __('Rafax Cluster de categorias', 'rafax-cluster'),
+  title: __('Rafax Cluster de categorías', 'rafax-cluster'),
   icon: {
-    src: _cluster_svg__WEBPACK_IMPORTED_MODULE_1__.ReactComponent
+    src: _cluster_svg__WEBPACK_IMPORTED_MODULE_2__.ReactComponent
   },
   category: 'widgets',
   attributes: {
@@ -95,6 +100,14 @@ registerBlockType('rafax/cluster-categorias', {
     excludeCats: {
       type: 'array',
       default: []
+    },
+    showDescription: {
+      type: 'boolean',
+      default: false
+    },
+    showCount: {
+      type: 'boolean',
+      default: false
     },
     targetBlank: {
       type: 'boolean',
@@ -133,9 +146,9 @@ registerBlockType('rafax/cluster-categorias', {
     allCategories,
     categories,
     attributes,
-    setAttributes
+    setAttributes,
+    blockProps
   }) => {
-    console.log(categories);
     if (!categories) {
       return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         className: "rafax-cluster-spinner"
@@ -143,6 +156,7 @@ registerBlockType('rafax/cluster-categorias', {
     }
     let catsNames = [];
     let catsFieldValue = [];
+    let categoryOptions = [];
     if (allCategories !== null) {
       catsNames = allCategories.map(cat => cat.name);
       catsFieldValue = attributes.excludeCats.map(catId => {
@@ -154,24 +168,28 @@ registerBlockType('rafax/cluster-categorias', {
         }
         return wantedCat.name;
       });
+      categoryOptions = allCategories.map(category => ({
+        label: category.name,
+        value: category.id
+      }));
     }
     return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Fragment, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(InspectorControls, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(PanelBody, {
-      title: __('Opciones cluster Categorias', 'rafax-cluster'),
+      title: __('Opciones cluster categorías', 'rafax-cluster'),
       initialOpen: true
     }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ToggleControl, {
-      label: __('Mostrar solo categorias padre', 'rafax-cluster'),
+      label: __('Mostrar solo categorías padre', 'rafax-cluster'),
       checked: attributes.showOnlyParent,
       onChange: value => setAttributes({
         showOnlyParent: value
       })
     }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ToggleControl, {
-      label: __('Ocultar categorias vacias', 'rafax-cluster'),
+      label: __('Ocultar categorías vacias', 'rafax-cluster'),
       checked: attributes.hideEmpty,
       onChange: value => setAttributes({
         hideEmpty: value
       })
     }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(TextControl, {
-      label: __('Numero de categorias a devolver', 'rafax-cluster'),
+      label: __('Numero de categorías a devolver', 'rafax-cluster'),
       help: __('0 para mostrar todas', 'rafax-cluster'),
       value: attributes.numberPosts,
       onChange: value => {
@@ -179,18 +197,24 @@ registerBlockType('rafax/cluster-categorias', {
           numberCats: undefined === value ? 0 : value
         });
       }
-    }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(TextControl, {
-      label: __('Mostrar categorias hijo de ', 'rafax-cluster'),
-      help: __('Id de la categoria padre', 'rafax-cluster'),
+    }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(SelectControl, {
+      label: __('Mostrar categorías hijo de ', 'rafax-cluster'),
+      help: __('Id de la categoría padre', 'rafax-cluster'),
       value: attributes.showParent,
+      options: [{
+        label: __('Buscar categoría', 'rafax-cluster'),
+        value: 0
+      }, ...categoryOptions
+      // Agrega más opciones de categorías según sea necesario
+      ],
       onChange: value => {
         setAttributes({
           showParent: undefined === value ? 0 : value
         });
       }
     }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(FormTokenField, {
-      label: __('Excluir Categorias', 'rafax-cluster'),
-      help: __('Incluye la id de las categorias a excluir separadas por coma', 'rafax-cluster'),
+      label: __('Excluir categorías', 'rafax-cluster'),
+      help: __('Busca las categorías a excluir', 'rafax-cluster'),
       value: catsFieldValue,
       suggestions: catsNames,
       onChange: cats => {
@@ -208,32 +232,36 @@ registerBlockType('rafax/cluster-categorias', {
           excludeCats: selectedCatsArray
         });
       }
-    }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ToggleControl, {
+    })), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(PanelBody, {
+      title: __('Opciones de visualizacion', 'rafax-cluster'),
+      initialOpen: true
+    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ToggleControl, {
       label: __('Abrir enlaces en una nueva ventana', 'rafax-cluster'),
       checked: attributes.targetBlank,
       onChange: value => setAttributes({
         targetBlank: value
       })
+    }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ToggleControl, {
+      label: __('Mostrar contador de entradas', 'rafax-cluster'),
+      checked: attributes.showCount,
+      onChange: value => setAttributes({
+        showCount: value
+      })
+    }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(ToggleControl, {
+      label: __('Mostrar descripción de la categoría', 'rafax-cluster'),
+      checked: attributes.showDescription,
+      onChange: value => setAttributes({
+        showDescription: value
+      })
     }))), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Placeholder, {
-      icon: "admin-post",
-      label: __('Rafax Cluster categorias', 'rafax-cluster'),
-      instructions: __('Selecciona las opciones para mostrar las categoriass en el clusterr.', 'rafax-cluster')
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "cluster grid-cols-3 style-4"
-    }, categories.map(cat => (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Fragment, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("a", {
-      id: cat.id,
-      ...(attributes.targetBlank ? {
-        target: "_blank"
-      } : {}),
-      href: cat.link,
-      className: "post-grid-item vertical"
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "content"
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "title"
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, cat.name + ' (' + cat.count + ')', " ")), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "description"
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, cat.description)))))))));
+      icon: "category",
+      label: __('Rafax Cluster categorías', 'rafax-cluster'),
+      instructions: __('Selecciona las opciones para mostrar las categorías en el cluster.', 'rafax-cluster')
+    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Disabled, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_1___default()), {
+      block: 'rafax/cluster-categorias',
+      skipBlockSupportAttributes: true,
+      attributes: attributes
+    }))));
   }),
   save: () => {
     return null;
@@ -252,6 +280,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _cluster_svg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../cluster.svg */ "./src/cluster.svg");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/server-side-render */ "@wordpress/server-side-render");
+/* harmony import */ var _wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_2__);
 
 const {
   registerBlockType
@@ -272,11 +302,14 @@ const {
   ToggleControl,
   TextControl,
   SelectControl,
-  FormTokenField
+  FormTokenField,
+  Disabled
 } = wp.components;
 const {
-  InspectorControls
+  InspectorControls,
+  useBlockProps
 } = wp.blockEditor;
+
 
 registerBlockType('rafax/cluster-entradas', {
   title: __('Rafax Cluster Entradas', 'rafax-cluster'),
@@ -336,13 +369,15 @@ registerBlockType('rafax/cluster-entradas', {
       })
     };
   })(({
-    postId,
     categories,
     selectedPosts,
     allPosts,
     attributes,
     setAttributes
   }) => {
+    const blockProps = useBlockProps({
+      className: '-dynamic-block'
+    });
     if (!categories || !selectedPosts || !allPosts) {
       return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         className: "rafax-cluster-spinner"
@@ -381,7 +416,7 @@ registerBlockType('rafax/cluster-entradas', {
       value: attributes.numberPosts,
       onChange: value => {
         setAttributes({
-          numberPosts: undefined === value ? '' : value
+          numberPosts: undefined === value ? -1 : value
         });
       }
     }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(FormTokenField, {
@@ -417,25 +452,14 @@ registerBlockType('rafax/cluster-entradas', {
         category: value
       })
     }))), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Placeholder, {
-      icon: "admin-post",
-      label: __('Rafax Cluster', 'rafax-cluster'),
+      icon: "feedback",
+      label: __('Rafax Cluster de Entradas', 'rafax-cluster'),
       instructions: __('Selecciona las opciones para mostrar las entradas en el clusterr.', 'rafax-cluster')
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "cluster grid-cols-3 style-4"
-    }, selectedPosts.map(post => (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Fragment, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("a", {
-      id: post.id,
-      href: post.guid.rendered,
-      className: "post-grid-item vertical"
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "thumb"
-    }, attributes.showFeaturedImage && (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("img", {
-      src: post.image_post,
-      alt: post.title.rendered
-    })), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "content"
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "title"
-    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, post.title.rendered)))))))));
+    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Disabled, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)((_wordpress_server_side_render__WEBPACK_IMPORTED_MODULE_2___default()), {
+      block: 'rafax/cluster-entradas',
+      skipBlockSupportAttributes: true,
+      attributes: attributes
+    }))));
   }),
   save: () => {
     return null;
@@ -451,6 +475,16 @@ registerBlockType('rafax/cluster-entradas', {
 /***/ ((module) => {
 
 module.exports = window["React"];
+
+/***/ }),
+
+/***/ "@wordpress/server-side-render":
+/*!******************************************!*\
+  !*** external ["wp","serverSideRender"] ***!
+  \******************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["serverSideRender"];
 
 /***/ })
 
