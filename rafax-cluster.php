@@ -33,10 +33,10 @@ function rafax_cluster_block_init()
 	wp_register_script('rafax_editor_script', plugins_url('build/index.js', __FILE__), array('wp-blocks', 'wp-element', 'wp-editor', 'wp-i18n', 'wp-components'), filemtime(plugin_dir_path(__FILE__) . 'build/index.js'));
 
 	// estilos
-	wp_register_style('rafax-editor-styles', plugins_url('src/editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'src/editor.css'));
+	wp_register_style('rafax-editor-styles', plugins_url('editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'editor.css'));
 
 	// estilos frontend
-	wp_register_style('rafax-frontend-styles', plugins_url('src/style.css', __FILE__), array(), filemtime(plugin_dir_path(__FILE__) . 'src/style.css'));
+	wp_register_style('rafax-frontend-styles', plugins_url('style.css', __FILE__), array(), filemtime(plugin_dir_path(__FILE__) . 'style.css'));
 
 
 	// registro del bloque
@@ -47,6 +47,10 @@ function rafax_cluster_block_init()
 				'showFeaturedImage' => [
 					'type' => 'boolean',
 					'default' => false,
+				],
+				'includePosts' => [
+					'type' => 'array',
+					'default' => [],
 				],
 				'excludePosts' => [
 					'type' => 'array',
@@ -59,6 +63,10 @@ function rafax_cluster_block_init()
 				'numberPosts' => [
 					'type' => 'string',
 					'default' => 6,
+				],
+				'styleGrid' => [
+					'type' => 'string',
+					'default' => 'grid-cols-3'
 				],
 
 			],
@@ -86,7 +94,7 @@ function rafax_cluster_block_init()
 				),
 				'numberCats' => array(
 					'type' => 'string',
-					'default' => -1
+					'default' => 0
 				),
 				'hideEmpty' => array(
 					'type' => 'boolean',
@@ -96,6 +104,7 @@ function rafax_cluster_block_init()
 					'type' => 'array',
 					'default' => array()
 				),
+
 				'showParent' => array(
 					'type' => 'string',
 					'default' => 0
@@ -107,7 +116,11 @@ function rafax_cluster_block_init()
 				'showDescription' => array(
 					'type' => 'boolean',
 					'default' => false
-				)
+				),
+				'styleGrid' => array(
+					'type' => 'string',
+					'default' => 'grid-cols-3'
+				),
 			),
 
 			'editor_script' => 'rafax_editor_script',
@@ -118,6 +131,7 @@ function rafax_cluster_block_init()
 	);
 
 }
+
 add_action('init', 'rafax_cluster_block_init');
 
 function rafax_cluster_categorias_callback($attributes, $content)
@@ -125,7 +139,7 @@ function rafax_cluster_categorias_callback($attributes, $content)
 	$args = array(
 		'taxonomy' => 'category',
 		'hide_empty' => $attributes['hideEmpty'],
-		'per_page' => $attributes['numberCats'],
+		'number' => $attributes['numberCats'],
 		'exclude' => $attributes['excludeCats'],
 
 	);
@@ -136,7 +150,8 @@ function rafax_cluster_categorias_callback($attributes, $content)
 	if ($attributes['showParent'] > 0) {
 		$args['parent'] = $attributes['showParent'];
 	}
-
+	//error_log(print_r($args, true));
+	
 	$categories = get_categories($args);
 
 	if (!$categories) {
@@ -147,14 +162,15 @@ function rafax_cluster_categorias_callback($attributes, $content)
 
 	$target = $attributes['targetBlank'] ? 'target="_blank"' : '';
 
-	$output = '<div class="cluster cluster-cats grid-cols-3 style-4 ">';
+	$output = '<div class="cluster cluster-cats ' . $attributes['styleGrid'] . ' style-4 ">';
+
 
 	foreach ($categories as $cat) {
 
 		$output .= '<a ' . $target . ' class="post-grid-item vertical" href="' . get_category_link($cat->term_id) . '">';
 		$output .= '<div class="content" >';
 		$output .= '<div class="title" >';
-		$output .= '<h3>' . $cat->name . '</h3> ';
+		$output .= $attributes['showCount'] ? sprintf('<h3>%s ( %s )</h3>', $cat->name, $cat->count) : '<h3>' . $cat->name . '</h3>';
 		$output .= '</div>';
 		$output .= $attributes['showDescription'] ? '<div class="description" ><p>' . $cat->description . '</p></div> ' : '';
 		$output .= '</div>';
@@ -170,23 +186,31 @@ function rafax_cluster_entradas_callback($attributes)
 {
 	$postId = get_the_ID();
 
-	error_log(print_r($attributes, true));
+	//error_log(print_r($attributes, true));
 
 	$args = array(
-		'numberposts' => $attributes['numberPosts'] > 0 ? $attributes['numberPosts'] : -1,
-		'exclude' => array_merge($attributes['excludePosts'], array($postId)),
+
 		'post_status' => 'publish',
 	);
 
-	if ($attributes['category'] !== 'all') {
-		$args['category'] = $attributes['category'];
+	if (count($attributes['includePosts']) === 0) {
+
+		$args['numberposts'] = $attributes['numberPosts'] > 0 ? $attributes['numberPosts'] : -1;
+		$args['exclude'] = array_merge($attributes['excludePosts'], array($postId));
+
+		if ($attributes['category'] !== 'all') {
+			$args['category'] = $attributes['category'];
+		}
+	} else {
+		$args['include'] = $attributes['includePosts'];
 	}
-	//error_log(print_r($args, true));
+
+	
 	$posts = get_posts($args);
 
-	//error_log( print_r( $posts, true ) );
+	
 
-	$output = '<div class="cluster cluster-posts grid-cols-3 style-4">';
+	$output = '<div class="cluster cluster-posts ' . $attributes['styleGrid'] . ' style-4">';
 
 	foreach ($posts as $post) {
 		$output .= '<a id="' . $post->ID . '" href="' . get_the_permalink($post->ID) . '" class="post-grid-item vertical">';
@@ -206,9 +230,8 @@ function rafax_cluster_entradas_callback($attributes)
 	return $output;
 
 }
-
-
-add_action('rest_api_init', 'rafax_image_posts');
+// ya no es necesario porque no se renderiza en edit.js
+/* add_action('rest_api_init', 'rafax_image_posts');
 function rafax_image_posts()
 {
 	register_rest_field(
@@ -220,7 +243,7 @@ function rafax_image_posts()
 			'schema' => null
 		)
 	);
-}
+} */
 
 function get_image_post($object, $field_name, $request)
 {
@@ -230,3 +253,13 @@ function get_image_post($object, $field_name, $request)
 	}
 	return false;
 }
+
+function rafax_custom_category_blocks($block_categories, $block_editor_context)
+{
+	array_push(
+		$block_categories,
+		array('slug' => 'rafax-blocks', 'title' => __('Rafax Blocks', 'rafax-cluster'), 'icon' => '')
+	);
+	return $block_categories;
+}
+add_filter('block_categories_all','rafax_custom_category_blocks',10,2);
