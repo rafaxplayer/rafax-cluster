@@ -45,9 +45,11 @@ registerBlockType('rafax/cluster-entradas', {
 
 		let selectCore = select('core');
 
+		const { attributes } = select('core/block-editor').getBlock(clientId);
+
 		return {
 			categories: selectCore.getEntityRecords('taxonomy', 'category', { per_page: -1 }),
-			allPosts: selectCore.getEntityRecords('postType', 'post', { per_page: -1 }),
+			allPosts: selectCore.getEntityRecords('postType', 'post', { per_page: attributes.numberPosts }),
 		};
 	})(({ categories, allPosts, attributes, setAttributes }) => {
 
