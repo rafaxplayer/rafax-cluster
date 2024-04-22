@@ -2,14 +2,14 @@ const { registerBlockType } = wp.blocks;
 const { __ } = wp.i18n;
 const { withSelect } = wp.data;
 const { Fragment } = wp.element;
-const { PanelBody, Spinner, Placeholder, ToggleControl, TextControl,  FormTokenField, Disabled} = wp.components;
+const { PanelBody, RangeControl, Spinner, Placeholder, ToggleControl, FormTokenField, Disabled } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 import ServerSideRender from '@wordpress/server-side-render';
 
 import { postCategories } from '@wordpress/icons';
 
-import { BlockStyles,SelectorCats } from '../sharecomponents';
+import { BlockStyles, SelectorCats } from '../sharecomponents';
 
 registerBlockType('rafax/cluster-categorias', {
     title: __('Rafax Cluster de categorías', 'rafax-cluster'),
@@ -61,7 +61,6 @@ registerBlockType('rafax/cluster-categorias', {
 
         const { showOnlyParent, excludeCats, hideEmpty, numberCats, showParent } = select('core/block-editor').getBlock(clientId).attributes;
 
-
         let queryArgs = {
             hide_empty: hideEmpty,
             per_page: numberCats > 0 ? numberCats : -1,
@@ -101,7 +100,7 @@ registerBlockType('rafax/cluster-categorias', {
         let categoryOptions = [];
 
         if (allCategories !== null) {
-            
+
             catsNames = allCategories.map((cat) => cat.name);
 
             catsFieldValue = attributes.excludeCats.map((catId) => {
@@ -119,7 +118,7 @@ registerBlockType('rafax/cluster-categorias', {
                 value: category.id,
             }));
         }
-        
+
         return (
             <Fragment>
                 <BlockStyles setAttributes={setAttributes} />
@@ -135,21 +134,18 @@ registerBlockType('rafax/cluster-categorias', {
                             checked={attributes.hideEmpty}
                             onChange={(value) => setAttributes({ hideEmpty: value })}
                         />
-                        <TextControl
+                        <RangeControl
                             label={__(
                                 'Numero de categorías a devolver',
                                 'rafax-cluster'
                             )}
-                            help={__(
-                                '0 para mostrar todas',
-                                'rafax-cluster'
-                            )}
-                            value={attributes.numberCats}
-                            onChange={(value) => {
+                            value={parseInt(attributes.numberCats)}
+                            onChange={(value) => setAttributes({ numberCats: String(value) })}
+                            min={1}
+                            max={100}
 
-                                setAttributes({ numberCats: undefined === value ? 0 : value })
-                            }}
                         />
+
                         <SelectorCats
                             categories={allCategories}
                             label={__(
@@ -161,11 +157,11 @@ registerBlockType('rafax/cluster-categorias', {
                                 'rafax-cluster'
                             )}
                             attributes={attributes}
-                            defaultItem={ {label: __('Buscar categoría', 'rafax-cluster'), value: 0} }
+                            defaultItem={{ label: __('Buscar categoría', 'rafax-cluster'), value: 0 }}
                             value={attributes.showParent}
-                            onChange={(value)=>setAttributes({ showParent: undefined === value ? 0 : value })} />
+                            onChange={(value) => setAttributes({ showParent: undefined === value ? 0 : value })} />
 
-                        
+
                         <FormTokenField
                             label={__(
                                 'Excluir categorías',

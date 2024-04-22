@@ -2,7 +2,7 @@ const { registerBlockType } = wp.blocks;
 const { withSelect } = wp.data;
 const { Fragment } = wp.element;
 const { __ } = wp.i18n;
-const { PanelBody, Spinner, Placeholder, ToggleControl, TextControl, FormTokenField, Disabled, } = wp.components;
+const { PanelBody, Spinner, Placeholder, ToggleControl, SelectControl, FormTokenField, Disabled, RangeControl } = wp.components;
 const { InspectorControls, useBlockProps } = wp.blockEditor;
 
 import { BlockStyles, SelectorCats } from '../sharecomponents';
@@ -34,11 +34,25 @@ registerBlockType('rafax/cluster-entradas', {
 		},
 		numberPosts: {
 			type: 'string',
-			default: 6,
+			default: 100,
+		},
+		orderBy: {
+			type: 'string',
+			default: 'date'
+
+		},
+		order: {
+			type: 'string',
+			default: 'DESC'
+
 		},
 		styleGrid: {
 			type: 'string',
 			default: 'grid-cols-3'
+		},
+		typeSelect: {
+			type: 'string',
+			default: '1'
 		}
 	},
 	edit: withSelect((select, { clientId }) => {
@@ -52,6 +66,16 @@ registerBlockType('rafax/cluster-entradas', {
 			allPosts: selectCore.getEntityRecords('postType', 'post', { per_page: attributes.numberPosts }),
 		};
 	})(({ categories, allPosts, attributes, setAttributes }) => {
+
+		const resetAttributes = () => {
+			setAttributes({
+				includePosts: [],
+				excludePosts: [],
+				category: 'all',
+				numberPosts: '100',
+
+			});
+		};
 
 		if (!categories || !allPosts) {
 			return (
@@ -101,7 +125,18 @@ registerBlockType('rafax/cluster-entradas', {
 							checked={attributes.showFeaturedImage}
 							onChange={(value) => setAttributes({ showFeaturedImage: value })}
 						/>
-						<FormTokenField
+						<SelectControl
+							label={__('Tipo de seleccion', 'rafax-cluster')}
+							value={attributes.typeSelect}
+							options={[{ label: 'Últimas entradas', value: '1' }, { label: 'Entradas de una categoría', value: '2' }, { label: 'Elegir entradas', value: '3' }]}
+							onChange={(value) => {
+
+								setAttributes({ typeSelect: value })
+								resetAttributes()
+							}}
+						/>
+
+						{attributes.typeSelect === '3' && <FormTokenField
 							label={__(
 								'Mostrar solo estas entradas',
 								'rafax-cluster'
@@ -109,10 +144,10 @@ registerBlockType('rafax/cluster-entradas', {
 
 							value={includePostsValue}
 							suggestions={postNames}
-							placeholder={ __(
+							placeholder={__(
 								'Busca las entradas que quieras mostrar',
 								'rafax-cluster'
-							) }
+							)}
 							onChange={(selectedPosts) => {
 								// Build array of selected posts.
 								let selectedPostsArray = [];
@@ -128,31 +163,30 @@ registerBlockType('rafax/cluster-entradas', {
 								)
 								setAttributes({ includePosts: selectedPostsArray });
 							}}
-						/>
-						<TextControl
+						/>}
+						{(attributes.typeSelect === '1' || attributes.typeSelect === '2') && <RangeControl
 							label={__(
 								'Numero de posts',
 								'rafax-cluster'
 							)}
-							disabled={attributes.includePosts.length > 0}
-							value={attributes.numberPosts}
-							onChange={(value) => {
+							value={parseInt(attributes.numberPosts)}
+							onChange={(value) => setAttributes({ numberPosts: String(value) })}
+							min={1}
+							max={100}
 
-								setAttributes({ numberPosts: undefined === value ? -1 : value })
-							}}
-						/>
-						<FormTokenField
+						/>}
+
+						{attributes.typeSelect === '1' && <FormTokenField
 							label={__(
 								'Excluir entradas',
 								'rafax-cluster'
 							)}
-							disabled={attributes.includePosts.length > 0}
 							value={excludePostsValue}
 							suggestions={postNames}
-							placeholder={ __(
+							placeholder={__(
 								'Busca las entradas a excluir',
 								'rafax-cluster'
-							) }
+							)}
 							onChange={(selectedPosts) => {
 								// Build array of selected posts.
 								let selectedPostsArray = [];
@@ -168,15 +202,27 @@ registerBlockType('rafax/cluster-entradas', {
 								)
 								setAttributes({ excludePosts: selectedPostsArray });
 							}}
-						/>
-						<SelectorCats
+						/>}
+						{attributes.typeSelect === '2' && <SelectorCats
 							categories={categories}
-							disabled={attributes.includePosts.length > 0}
-							label={__('Categoría', 'rafax-cluster')}
+														label={__('Categoría', 'rafax-cluster')}
 							attributes={attributes}
 							defaultItem={{ label: __('Todas las Categorías', 'rafax-cluster'), value: 'all' }}
 							value={attributes.category}
-							onChange={(value) => setAttributes({ category: value })} />
+							onChange={(value) => setAttributes({ category: value })} />}
+
+						<SelectControl
+							label={__('Ordenar por', 'rafax-cluster')}
+							value={attributes.orderBy}
+							options={[{ label: 'Título', value: 'title' }, { label: 'Fecha', value: 'date' }, { label: 'Aleatorio', value: 'rand' }]}
+							onChange={(value) => setAttributes({ orderBy: value })}
+						/>
+						<SelectControl
+							label={__('Orden', 'rafax-cluster')}
+							value={attributes.order}
+							options={[{ label: 'Ascendente', value: 'ASC' }, { label: 'Descendente', value: 'DESC' }]}
+							onChange={(value) => setAttributes({ order: value })}
+						/>
 					</PanelBody>
 				</InspectorControls>
 				<Placeholder

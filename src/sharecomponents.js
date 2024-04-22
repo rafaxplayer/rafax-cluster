@@ -61,3 +61,11 @@ export function SelectorCats({ categories: cats, label: label, help: help, disab
 
     );
 }
+
+export function setdefaultsAttrs(attributes=attributes,setAttributes=setAttributes){
+    attributes.map((attr)=>{
+        //setAttributes(attr.);
+
+    });
+
+}

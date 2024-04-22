@@ -54,41 +54,51 @@ class rfc_cluster
 		// registro del bloque
 		register_block_type(
 			'rafax/cluster-entradas',
-			[
-				'attributes' => [
-					'showFeaturedImage' => [
+			array(
+				'attributes' => array(
+					'showFeaturedImage' => array(
 						'type' => 'boolean',
 						'default' => false,
-					],
-					'includePosts' => [
+					),
+					'includePosts' => array(
 						'type' => 'array',
-						'default' => [],
-					],
-					'excludePosts' => [
+						'default' => array(),
+					),
+					'excludePosts' => array(
 						'type' => 'array',
-						'default' => [],
-					],
-					'category' => [
+						'default' => array(),
+					),
+					'category' => array(
 						'type' => 'string',
 						'default' => 'all',
-					],
-					'numberPosts' => [
+					),
+					'numberPosts' => array(
 						'type' => 'string',
 						'default' => 6,
-					],
-					'styleGrid' => [
+					),
+					'orderBy' => array(
+						'type' => 'string',
+						'default' => 'date',
+					),
+					'order' => array(
+						'type' => 'string',
+						'default' => 'DESC',
+					),
+					'styleGrid' => array(
 						'type' => 'string',
 						'default' => 'grid-cols-3'
-					],
-
-				],
-
+					),
+					'typeSelect' => array(
+						'type' => 'string',
+						'default' => '1'
+					),
+				),
 				'editor_script' => 'rfc_editor_script',
-				'editor_style' => 'rafax-editor-styles',
-				'style' => 'rafax-frontend-styles',
+				'editor_style' => 'rfc_editor-styles',
+				'style' => 'rfc_frontend-styles',
 				'render_callback' => array($this, 'rfc_block_entradas_callback'),
 
-			]
+			)
 		);
 
 		// registro del bloque
@@ -105,7 +115,7 @@ class rfc_cluster
 						'default' => false
 					),
 					'numberCats' => array(
-						'type' => 'string',
+						'type' => 'integer',
 						'default' => 0
 					),
 					'hideEmpty' => array(
@@ -116,7 +126,6 @@ class rfc_cluster
 						'type' => 'array',
 						'default' => array()
 					),
-
 					'showParent' => array(
 						'type' => 'string',
 						'default' => 0
@@ -134,20 +143,51 @@ class rfc_cluster
 						'default' => 'grid-cols-3'
 					),
 				),
-
 				'editor_script' => 'rfc_editor_script',
-				'editor_style' => 'rafax-editor-styles',
-				'style' => 'rafax-frontend-styles',
+				'editor_style' => 'rfc-editor-styles',
+				'style' => 'rfc-frontend-styles',
 				'render_callback' => array($this, 'rfc_block_categorias_callback'),
+			)
+		);
+
+		register_block_type(
+			'rafax/directorist-csv',
+			array(
+				'attributes' => array(
+					'csvFile' => array(
+						'type' => 'object',
+						'default' => ''
+					),
+					'numberItems' => array(
+						'type' => 'string',
+						'default' => '10'
+					),
+					'rand' => array(
+						'type' => 'boolean',
+						'default' => false
+					),
+					'removeCsv' => array(
+
+						'type' => 'string',
+						'default' => ''
+					),
+
+				),
+				'editor_script' => 'rfc_editor_script',
+				'editor_style' => 'rfc-editor-styles',
+				'style' => 'rfc-frontend-styles',
+				'render_callback' => array($this, 'rfc_block_directorist_callback'),
 			)
 		);
 
 
 	}
 
+
+
 	/*
-	   /*SETTINGS AND OPTIONS
-	   */
+													   /*SETTINGS AND OPTIONS
+													   */
 	function rfc_settings_page()
 	{
 		add_menu_page(__('Rafax clusters settings', 'rafax-cluster'), __('Rafax cluster', 'rafax-cluster'), 'manage_options', 'rfc_settings', [$this, 'rfc_setting_page'], 'dashicons-welcome-widgets-menus', 80);
@@ -162,6 +202,8 @@ class rfc_cluster
 
 		add_settings_field('rfc_remove_uninstall', __('Eliminar todos los datos del plugin al desinstalar', 'rafax-cluster'), [$this, 'rfc_remove_uninstall_option'], 'rfc_options', 'rfc_settings_section');
 
+		add_settings_field('rfc_template_directory', __('Edita la plantilla para los elemntos de directorist block', 'rafax-cluster'), [$this, 'rfc_template_directory_option'], 'rfc_options', 'rfc_settings_section');
+
 
 	}
 
@@ -174,12 +216,22 @@ class rfc_cluster
 		<?php
 	}
 
+	function rfc_template_directory_option()
+	{
+		$options = get_option('rfc_options');
+
+		?>
+		<textarea rows="15" style="width:600px" id="rfc_template_directory" name="rfc_options[rfc_template_directory]"
+			value="1"></testarea> <?php
+
+	}
+
 	function rfc_section_callback()
 	{
 		?>
-		<p> <?php echo __('Usar imagenes en las categorias ( Utiliza el plugin category images )', 'rafax-cluster') ?></p> <a
-			href="https://zahlan.net/blog/2012/06/categories-images/" target="_blank">Intrucciones para implementar la imagen en
-			la plantilla</a><?php
+								<p> <?php echo __('Usar imagenes en las categorias ( Utiliza el plugin category images )', 'rafax-cluster') ?></p> <a
+									href="https://zahlan.net/blog/2012/06/categories-images/" target="_blank">Intrucciones para implementar la imagen en
+									la plantilla</a><?php
 	}
 
 	function rfc_setting_page()
@@ -187,14 +239,14 @@ class rfc_cluster
 		if (!current_user_can('manage_options'))
 			wp_die(__('You do not have sufficient permissions to access this page.', 'rafax-cluster'));
 		?>
-		<div class="wrap">
-			<h2><?php _e('Rafax cluster', 'rafax-cluster'); ?></h2>
-			<form method="post" action="options.php">
-				<?php settings_fields('rfc_options'); ?>
-				<?php do_settings_sections('rfc_options'); ?>
-				<?php submit_button(); ?>
-			</form>
-		</div><?php
+								<div class="wrap">
+									<h2><?php _e('Rafax cluster', 'rafax-cluster'); ?></h2>
+									<form method="post" action="options.php">
+										<?php settings_fields('rfc_options'); ?>
+										<?php do_settings_sections('rfc_options'); ?>
+										<?php submit_button(); ?>
+									</form>
+								</div><?php
 	}
 
 
@@ -204,15 +256,78 @@ class rfc_cluster
 		wp_register_script('rfc_editor_script', plugins_url('build/index.js', __FILE__), array('wp-blocks', 'wp-element', 'wp-editor', 'wp-i18n', 'wp-components'), filemtime(plugin_dir_path(__FILE__) . 'build/index.js'));
 
 		// estilos
-		wp_register_style('rafax-editor-styles', plugins_url('editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'editor.css'));
+		wp_register_style('rfc-editor-styles', plugins_url('editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'editor.css'));
 
 		// estilos frontend
-		wp_register_style('rafax-frontend-styles', plugins_url('style.css', __FILE__), array(), filemtime(plugin_dir_path(__FILE__) . 'style.css'));
+		wp_register_style('rfc-frontend-styles', plugins_url('style.css', __FILE__), array(), filemtime(plugin_dir_path(__FILE__) . 'style.css'));
 
 
 	}
 
+	function csvToArray($filename, $count)
+	{
+		$csvData = [];
+		if (($handle = fopen($filename, "r")) !== FALSE) {
+			$headers = fgetcsv($handle, 1000, ",");
+			while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+				$row = array();
+				for ($i = 0; $i < count($headers); $i++) {
+					$row[$headers[$i]] = $data[$i];
+				}
+				$csvData[] = $row;
+				if (count($csvData) > $count) {
+					break;
+				}
+			}
+			fclose($handle);
+		}
+		return $csvData;
+	}
+
+
 	/* BLOCKS */
+	// callback to register block
+	function rfc_block_directorist_callback($attributes, $content)
+	{
+
+		if (!empty($attributes['removeCsv'])) {
+
+			//wp_delete_file($attributes['removeCsv']['url']);
+			
+		}
+
+		if ($attributes['csvFile']) {
+
+			$csv = $this->csvToArray($attributes['csvFile']['url'], $attributes['numberItems'], );
+
+
+			if (count($csv) !== "0") {
+
+				if ($attributes['rand']) {
+					shuffle($csv);
+				}
+
+				$output = '<div class="cluster cluster-posts style-4">';
+				$count = 1;
+				foreach ($csv as $row) {
+
+					include (plugin_dir_path(__FILE__) . '/templates/directory.php');
+					$count++;
+
+				}
+
+				$output .= '</div>';
+			}
+
+			error_log(print_r($csv, true));
+
+
+			return $output;
+
+		}
+
+		return 'No hay csv ';
+	}
 
 	//callback to register block
 	function rfc_block_categorias_callback($attributes, $content)
@@ -220,10 +335,12 @@ class rfc_cluster
 		$args = array(
 			'taxonomy' => 'category',
 			'hide_empty' => $attributes['hideEmpty'],
-			'number' => $attributes['numberCats'],
 			'exclude' => $attributes['excludeCats'],
 
 		);
+
+		$args['number'] = empty($attributes['numberCats']) ? -1 : $attributes['numberCats'];
+
 		if ($attributes['showOnlyParent']) {
 			$args['parent'] = 0;
 		}
@@ -231,13 +348,14 @@ class rfc_cluster
 		if ($attributes['showParent'] > 0) {
 			$args['parent'] = $attributes['showParent'];
 		}
-		
+
 
 		$categories = get_categories($args);
 
 		if (!$categories) {
 
-			return 'No hay categorías';
+			return sprintf('<p style="color:red;font-weight:bold">%s</p>', __('No hay categorias', 'rafax-cluster'));
+
 
 		}
 
@@ -251,12 +369,12 @@ class rfc_cluster
 			$output .= '<a ' . $target . ' class="post-grid-item vertical" href="' . get_category_link($cat->term_id) . '">';
 			if (function_exists('z_taxonomy_image_url') && z_taxonomy_image_url($cat->term_id)):
 				$output .= '<div class="thumb">';
-				$output .= '<img src="' . z_taxonomy_image_url($cat->term_id,'medium') . '" alt="' . $cat->name . '" />';
+				$output .= sprintf('<img src="%s" alt="%s" />', z_taxonomy_image_url($cat->term_id, 'medium'), $cat->name);
 				$output .= '</div>';
 			endif;
 			$output .= '<div class="content" >';
 			$output .= '<div class="title" >';
-			$output .= $attributes['showCount'] ? sprintf('<h3>%s ( %s )</h3>', $cat->name, $cat->count) : '<h3>' . $cat->name . '</h3>';
+			$output .= $attributes['showCount'] ? sprintf('<h3>%s ( %s )</h3>', $cat->name, $cat->count) : sprintf('<h3>%s</h3>', $cat->name);
 			$output .= '</div>';
 			$output .= $attributes['showDescription'] ? '<div class="description" ><p>' . $cat->description . '</p></div> ' : '';
 			$output .= '</div>';
@@ -267,6 +385,8 @@ class rfc_cluster
 		$output .= '</div>';
 		return $output;
 	}
+
+
 	//callback to register block
 	function rfc_block_entradas_callback($attributes)
 	{
@@ -277,11 +397,13 @@ class rfc_cluster
 		$args = array(
 
 			'post_status' => 'publish',
+			'orderby' => $attributes['orderBy'],
+			'order' => $attributes['order']
 		);
 
 		if (count($attributes['includePosts']) === 0) {
 
-			$args['numberposts'] = $attributes['numberPosts'] > 0 ? $attributes['numberPosts'] : -1;
+			$args['numberposts'] = empty($attributes['numberPosts']) ? -1 : $attributes['numberPosts'];
 			$args['exclude'] = array_merge($attributes['excludePosts'], array($postId));
 
 			if ($attributes['category'] !== 'all') {
@@ -291,8 +413,12 @@ class rfc_cluster
 			$args['include'] = $attributes['includePosts'];
 		}
 
-
 		$posts = get_posts($args);
+
+		if (!$posts) {
+			return sprintf('<p style="color:red;font-weight:bold">%s</p>', __('No hay entradas', 'rafax-cluster'));
+			;
+		}
 
 		$output = '<div class="cluster cluster-posts ' . $attributes['styleGrid'] . ' style-4">';
 
