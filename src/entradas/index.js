@@ -8,7 +8,7 @@ const { InspectorControls, useBlockProps } = wp.blockEditor;
 import { BlockStyles, SelectorCats } from '../sharecomponents';
 import { post } from '@wordpress/icons';
 import ServerSideRender from '@wordpress/server-side-render';
-import { TRUE } from 'sass';
+
 
 
 registerBlockType('rafax/cluster-entradas', {

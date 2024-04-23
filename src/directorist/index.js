@@ -1,14 +1,11 @@
 const { registerBlockType } = wp.blocks;
-const { InspectorControls, MediaUpload } = wp.blockEditor;
+const { InspectorControls, MediaUpload,BlockControls } = wp.blockEditor;
 const { __ } = wp.i18n;
-const { Fragment } = wp.element;
-const { useEffect } = wp.element;
-const { BlockControls } = wp.blockEditor;
-const { PanelBody, Disabled, RangeControl, Placeholder, ToggleControl,ToolbarGroup,ToolbarDropdownMenu } = wp.components;
-import { seen } from '@wordpress/icons';
+const { Fragment, useEffect } = wp.element;
+const { PanelBody, Disabled, RangeControl, Placeholder, ToggleControl,ToolbarGroup, ToolbarDropdownMenu} = wp.components;
 
 import ServerSideRender from '@wordpress/server-side-render';
-import { blockMeta } from '@wordpress/icons';
+import { blockMeta, seen } from '@wordpress/icons';
 
 registerBlockType('rafax/directorist-csv', {
     title: __('Rafax directorio', 'rafax-cluster'),
@@ -31,7 +28,7 @@ registerBlockType('rafax/directorist-csv', {
             type: 'boolean',
             default: false
         },
-        plantilla:{
+        plantilla: {
             type: 'string',
             default: '1'
 
@@ -39,7 +36,8 @@ registerBlockType('rafax/directorist-csv', {
     },
 
     edit: ({ attributes, setAttributes }) => {
-        useEffect(() => {
+
+         useEffect(() => {
             console.log('Block added');
 
             return () => {
@@ -47,7 +45,7 @@ registerBlockType('rafax/directorist-csv', {
                 //setAttributes({ removeCsv: attributes.csvFile.id, csvFile: '' })
 
             }
-        }, []);
+        }, []); 
 
 
         const removeCsv = () => {
@@ -61,7 +59,7 @@ registerBlockType('rafax/directorist-csv', {
         return (
             <Fragment>
                 <BlockControls>
-                    <ToolbarGroup>
+                     <ToolbarGroup>
                         <ToolbarDropdownMenu
                             icon={seen}
                             label="Plantilla"
@@ -77,13 +75,13 @@ registerBlockType('rafax/directorist-csv', {
 
                                     onClick: () => setAttributes({ plantilla: '2' }),
                                 },
-                                
+
 
                             ]}
                         />
 
                     </ToolbarGroup>
-                </BlockControls>
+                </BlockControls>  
                 <InspectorControls>
                     <PanelBody title={__('Opciones cluster categorías', 'rafax-cluster')} initialOpen={true}>
 
