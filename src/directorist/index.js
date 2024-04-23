@@ -3,7 +3,9 @@ const { InspectorControls, MediaUpload } = wp.blockEditor;
 const { __ } = wp.i18n;
 const { Fragment } = wp.element;
 const { useEffect } = wp.element;
-const { PanelBody, Disabled, RangeControl, Placeholder, ToggleControl } = wp.components;
+const { BlockControls } = wp.blockEditor;
+const { PanelBody, Disabled, RangeControl, Placeholder, ToggleControl,ToolbarGroup,ToolbarDropdownMenu } = wp.components;
+import { seen } from '@wordpress/icons';
 
 import ServerSideRender from '@wordpress/server-side-render';
 import { blockMeta } from '@wordpress/icons';
@@ -19,7 +21,7 @@ registerBlockType('rafax/directorist-csv', {
         },
         removeCsv: {
             type: 'string',
-            default: ''
+            default: ""
         },
         numberItems: {
             type: 'string',
@@ -28,6 +30,11 @@ registerBlockType('rafax/directorist-csv', {
         rand: {
             type: 'boolean',
             default: false
+        },
+        plantilla:{
+            type: 'string',
+            default: '1'
+
         }
     },
 
@@ -37,26 +44,53 @@ registerBlockType('rafax/directorist-csv', {
 
             return () => {
                 console.log('Block deleted');
+                //setAttributes({ removeCsv: attributes.csvFile.id, csvFile: '' })
 
             }
         }, []);
 
-        console.log(attributes);
 
         const removeCsv = () => {
-            setAttributes({ removeCsv: attributes.csvFile.url, csvFile: [] })
-        }
 
+            if (confirm(__(`Se eliminara el archivo csv ${attributes.csvFile.filename}`, 'rafax-cluster'))) {
+
+                setAttributes({ removeCsv: attributes.csvFile.id, csvFile: '' })
+            }
+        }
 
         return (
             <Fragment>
+                <BlockControls>
+                    <ToolbarGroup>
+                        <ToolbarDropdownMenu
+                            icon={seen}
+                            label="Plantilla"
+                            controls={[
+
+                                {
+                                    title: 'Plantilla 1',
+
+                                    onClick: () => setAttributes({ plantilla: '1' }),
+                                },
+                                {
+                                    title: 'Plantilla 2',
+
+                                    onClick: () => setAttributes({ plantilla: '2' }),
+                                },
+                                
+
+                            ]}
+                        />
+
+                    </ToolbarGroup>
+                </BlockControls>
                 <InspectorControls>
                     <PanelBody title={__('Opciones cluster categorías', 'rafax-cluster')} initialOpen={true}>
 
                         <MediaUpload
                             onSelect={(csv) => {
                                 console.log(csv);
-                                setAttributes({ csvFile: csv });
+                                setAttributes({ csvFile: csv, removeCsv: '' });
                             }}
                             allowedTypes={['text/csv']}
                             value={attributes.csvFile}

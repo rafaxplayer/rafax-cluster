@@ -26,7 +26,7 @@ registerBlockType('rafax/cluster-categorias', {
         },
         numberCats: {
             type: 'string',
-            default: 0
+            default: 100
         },
         hideEmpty: {
             type: 'boolean',

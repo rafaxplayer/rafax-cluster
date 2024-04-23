@@ -12,6 +12,7 @@ module.exports = {
                 use:["@svgr/webpack","url-loader"]
                 
             },
+            
         ],
     },
 };
