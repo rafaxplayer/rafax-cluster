@@ -2,10 +2,10 @@ const { registerBlockType } = wp.blocks;
 const { withSelect } = wp.data;
 const { Fragment } = wp.element;
 const { __ } = wp.i18n;
-const { PanelBody, Spinner, Placeholder, ToggleControl, SelectControl, FormTokenField, Disabled, RangeControl } = wp.components;
-const { InspectorControls, useBlockProps } = wp.blockEditor;
+const { PanelBody, Spinner, Placeholder, ToggleControl, SelectControl, FormTokenField, Disabled, RangeControl } = wp.components
+const { InspectorControls } = wp.blockEditor;
 
-import { BlockStyles, SelectorCats } from '../sharecomponents';
+import { BlockStyles, SelectorCats, Loading } from '../sharecomponents';
 import { post } from '@wordpress/icons';
 import ServerSideRender from '@wordpress/server-side-render';
 
@@ -58,14 +58,16 @@ registerBlockType('rafax/cluster-entradas', {
 	},
 	edit: withSelect((select, { clientId }) => {
 
-		let selectCore = select('core');
+		const selectCore = select('core');
+		const selectEditor = select('core/block-editor');
 
-		const { attributes } = select('core/block-editor').getBlock(clientId);
+		const { attributes } = selectEditor.getBlock(clientId);
 
 		return {
 			categories: selectCore.getEntityRecords('taxonomy', 'category', { per_page: -1 }),
 			allPosts: selectCore.getEntityRecords('postType', 'post', { per_page: attributes.numberPosts }),
 		};
+
 	})(({ categories, allPosts, attributes, setAttributes }) => {
 
 		const resetAttributes = () => {
@@ -77,26 +79,28 @@ registerBlockType('rafax/cluster-entradas', {
 
 			});
 		};
+		const isLoading = !categories || !allPosts;
 
-		if (!categories || !allPosts) {
-			return (
-				<div className="rafax-cluster-spinner">
-					<Spinner />
-					{__('Cargando...', 'rafax-cluster')}
-				</div>
-			);
-		}
+		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category } = attributes;
+
+		const handleshowImage = (value) => setAttributes({ showFeaturedImage: value });
+		const handlenumberPosts = (value) => setAttributes({ numberPosts: String(value) });
+		const handleCategory = (value) => setAttributes({ category: value });
+		const handleorderBy = (value) => setAttributes({ orderBy: value });
+		const handleOrder = (value) => setAttributes({ order: value });
+
 
 		let postNames = [];
 		let excludePostsValue = [];
 		let includePostsValue = [];
 
 		if (allPosts !== null) {
-			postNames = allPosts.map((post) => post.title.raw);
+
+			postNames = allPosts?.map((post) => post.title.raw);
 
 			// rellenar el selector de excluir posts
-			excludePostsValue = attributes.excludePosts.map((postId) => {
-				let wantedPost = allPosts.find((post) => {
+			excludePostsValue = excludePosts?.map((postId) => {
+				let wantedPost = allPosts?.find((post) => {
 					return post.id === postId;
 				});
 				if (wantedPost === undefined || !wantedPost) {
@@ -106,8 +110,8 @@ registerBlockType('rafax/cluster-entradas', {
 			});
 
 			// rellenar el selector de incluir posts
-			includePostsValue = attributes.includePosts.map((postId) => {
-				let wantedPost = allPosts.find((post) => {
+			includePostsValue = includePosts?.map((postId) => {
+				let wantedPost = allPosts?.find((post) => {
 					return post.id === postId;
 				});
 				if (wantedPost === undefined || !wantedPost) {
@@ -116,6 +120,7 @@ registerBlockType('rafax/cluster-entradas', {
 				return wantedPost.title.raw;
 			});
 		}
+
 		return (
 			<Fragment>
 				<BlockStyles setAttributes={setAttributes} />
@@ -123,12 +128,12 @@ registerBlockType('rafax/cluster-entradas', {
 					<PanelBody title={__('Opciones', 'rafax-cluster')} initialOpen={true}>
 						<ToggleControl
 							label={__('Mostrar Imagen Destacada', 'rafax-cluster')}
-							checked={attributes.showFeaturedImage}
-							onChange={(value) => setAttributes({ showFeaturedImage: value })}
+							checked={showFeaturedImage}
+							onChange={handleshowImage}
 						/>
 						<SelectControl
 							label={__('Tipo de seleccion', 'rafax-cluster')}
-							value={attributes.typeSelect}
+							value={typeSelect}
 							options={[{ label: 'Últimas entradas', value: '1' }, { label: 'Entradas de una categoría', value: '2' }, { label: 'Elegir entradas', value: '3' }]}
 							onChange={(value) => {
 
@@ -137,7 +142,7 @@ registerBlockType('rafax/cluster-entradas', {
 							}}
 						/>
 
-						{attributes.typeSelect === '3' && <FormTokenField
+						{typeSelect === '3' && <FormTokenField
 							label={__(
 								'Mostrar solo estas entradas',
 								'rafax-cluster'
@@ -165,13 +170,13 @@ registerBlockType('rafax/cluster-entradas', {
 								setAttributes({ includePosts: selectedPostsArray });
 							}}
 						/>}
-						{(attributes.typeSelect === '1' || attributes.typeSelect === '2') && <RangeControl
+						{(typeSelect === '1' || typeSelect === '2') && <RangeControl
 							label={__(
 								'Numero de posts',
 								'rafax-cluster'
 							)}
-							value={parseInt(attributes.numberPosts)}
-							onChange={(value) => setAttributes({ numberPosts: String(value) })}
+							value={parseInt(numberPosts)}
+							onChange={handlenumberPosts}
 							min={1}
 							max={100}
 
@@ -206,31 +211,32 @@ registerBlockType('rafax/cluster-entradas', {
 						/>}
 						{attributes.typeSelect === '2' && <SelectorCats
 							categories={categories}
-														label={__('Categoría', 'rafax-cluster')}
+							label={__('Categoría', 'rafax-cluster')}
 							attributes={attributes}
 							defaultItem={{ label: __('Todas las Categorías', 'rafax-cluster'), value: 'all' }}
-							value={attributes.category}
-							onChange={(value) => setAttributes({ category: value })} />}
+							value={category}
+							onChange={handleCategory} />}
 
 						<SelectControl
 							label={__('Ordenar por', 'rafax-cluster')}
-							value={attributes.orderBy}
+							value={orderBy}
 							options={[{ label: 'Título', value: 'title' }, { label: 'Fecha', value: 'date' }, { label: 'Aleatorio', value: 'rand' }]}
-							onChange={(value) => setAttributes({ orderBy: value })}
+							onChange={handleorderBy}
 						/>
 						<SelectControl
 							label={__('Orden', 'rafax-cluster')}
-							value={attributes.order}
+							value={order}
 							options={[{ label: 'Ascendente', value: 'ASC' }, { label: 'Descendente', value: 'DESC' }]}
-							onChange={(value) => setAttributes({ order: value })}
+							onChange={handleOrder}
 						/>
 					</PanelBody>
 				</InspectorControls>
 				<Placeholder
 					icon="feedback"
 					label={__('Rafax Cluster de Entradas', 'rafax-cluster')}
-					instructions={__('Selecciona las opciones para mostrar las entradas en el clusterr.', 'rafax-cluster')}
+					instructions={__('Selecciona las opciones para mostrar las entradas en el cluster.', 'rafax-cluster')}
 				>
+					{isLoading && <Loading label={__('Cargando...', 'rafax-cluster')} />}
 					<Disabled>
 						<ServerSideRender
 							block={'rafax/cluster-entradas'}

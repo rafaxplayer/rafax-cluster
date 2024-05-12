@@ -1,11 +1,12 @@
 const { registerBlockType } = wp.blocks;
-const { InspectorControls, MediaUpload,BlockControls } = wp.blockEditor;
+const { InspectorControls, MediaUpload, BlockControls } = wp.blockEditor;
 const { __ } = wp.i18n;
 const { Fragment, useEffect } = wp.element;
-const { PanelBody, Disabled, RangeControl, Placeholder, ToggleControl,ToolbarGroup, ToolbarDropdownMenu} = wp.components;
-
+const { PanelBody, Disabled, RangeControl, Button, ButtonGroup, Placeholder, ToggleControl, ToolbarGroup, ToolbarDropdownMenu } = wp.components;
+import { __experimentalConfirmDialog as ConfirmDialog } from '@wordpress/components'
+import { useState } from 'react';
 import ServerSideRender from '@wordpress/server-side-render';
-import { blockMeta, seen } from '@wordpress/icons';
+import { blockMeta, seen, plus, trash } from '@wordpress/icons';
 
 registerBlockType('rafax/directorist-csv', {
     title: __('Rafax directorio', 'rafax-cluster'),
@@ -37,29 +38,25 @@ registerBlockType('rafax/directorist-csv', {
 
     edit: ({ attributes, setAttributes }) => {
 
-         useEffect(() => {
+        const { csvFile, numberItems, rand } = attributes;
+
+        useEffect(() => {
+            
             console.log('Block added');
 
             return () => {
                 console.log('Block deleted');
-                //setAttributes({ removeCsv: attributes.csvFile.id, csvFile: '' })
+                setAttributes({ removeCsv: csvFile.id, csvFile: '' })
 
             }
-        }, []); 
+        }, []);
 
-
-        const removeCsv = () => {
-
-            if (confirm(__(`Se eliminara el archivo csv ${attributes.csvFile.filename}`, 'rafax-cluster'))) {
-
-                setAttributes({ removeCsv: attributes.csvFile.id, csvFile: '' })
-            }
-        }
+        const [isOpen, setIsOpen] = useState(false);
 
         return (
             <Fragment>
                 <BlockControls>
-                     <ToolbarGroup>
+                    <ToolbarGroup>
                         <ToolbarDropdownMenu
                             icon={seen}
                             label="Plantilla"
@@ -81,39 +78,52 @@ registerBlockType('rafax/directorist-csv', {
                         />
 
                     </ToolbarGroup>
-                </BlockControls>  
+                </BlockControls>
                 <InspectorControls>
-                    <PanelBody title={__('Opciones cluster categorías', 'rafax-cluster')} initialOpen={true}>
+                    <PanelBody title={__('Opciones cluster directorio', 'rafax-cluster')} initialOpen={true}>
 
                         <MediaUpload
                             onSelect={(csv) => {
-                                console.log(csv);
+                                
                                 setAttributes({ csvFile: csv, removeCsv: '' });
                             }}
                             allowedTypes={['text/csv']}
-                            value={attributes.csvFile}
+                            value={csvFile}
                             render={({ open }) => (
                                 <>
-                                    <button onClick={open}>
+
+                                    <Button icon={plus} variant="primary" onClick={open}>
                                         {attributes.csvFile
-                                            ? 'Upload'
+                                            ? 'Upload CSV'
                                             : 'Upload new file'}
-                                    </button>
-                                    {attributes.csvFile && <button onClick={removeCsv}>
+                                    </Button>
+                                    {attributes.csvFile && <Button icon={trash} className="rfc-danger" variant="secondary" onClick={() => { setIsOpen(true); }}>
                                         Remove csv
-                                    </button>
-                                    }
-                                    <p>
-                                        {attributes.csvFile
-                                            ? attributes.csvFile.filename
+                                    </Button>}
+                                    <p><b>
+                                        {csvFile
+                                            ? 'Archivo: ' + csvFile.filename
                                             : ''}
-                                    </p>
+                                    </b></p>
                                 </>
                             )}
                         />
+                        <ConfirmDialog
+                            isOpen={isOpen}
+                            onConfirm={() => {
+                                setAttributes({ removeCsv: csvFile.id, csvFile: '' })
+                                setIsOpen(false);
+                            }}
+                            onCancel={() => {
+                                setIsOpen(false);
+                            }}
+                        >
+                            <p> Se eliminara el archivo csv {csvFile.filename}</p>
+
+                        </ConfirmDialog>
                         <ToggleControl
                             label={__('Orden aleatorio', 'rafax-cluster')}
-                            checked={attributes.rand}
+                            checked={rand}
                             onChange={(value) => setAttributes({ rand: value })}
                         />
                         <RangeControl
@@ -121,7 +131,7 @@ registerBlockType('rafax/directorist-csv', {
                                 'Numero de fichas',
                                 'rafax-cluster'
                             )}
-                            value={parseInt(attributes.numberItems)}
+                            value={parseInt(numberItems)}
                             onChange={(value) => setAttributes({ numberItems: String(value) })}
                             min={1}
                             max={100}
