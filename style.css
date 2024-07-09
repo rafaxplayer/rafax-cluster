@@ -1,0 +1,113 @@
+.cluster {
+	margin-top: 2em;
+	margin-bottom: 1em;
+}
+.cluster a{
+    text-decoration: none;
+    color: #444;
+}
+.post-grid-item {
+    display: flex;
+	flex-direction: column;
+	height: auto;
+	align-content: center;
+	align-items: center;
+	background: #fff;
+	border-radius: 0.5rem;
+	box-shadow: 0 1px 5px -1px rgba(0, 0, 0, 0.25);
+	display: flex;
+	overflow: hidden;
+	text-align: center;
+}
+.post-grid-item .thumb {
+	border-radius: 0.5em 0 0  0.5em;
+	flex: 1.5 1;
+	height: 100%;
+	max-width: 300px;
+	overflow: hidden;
+	position: relative;
+}
+.post-grid-item .thumb img {
+	display: block;
+	left: 50%;
+	max-width: none;
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%) translateX(-50%);
+}
+
+.post-grid-item:hover {
+	box-shadow: 0 3px 7px -1px rgba(0, 0, 0, .25);;
+    opacity: 0.75;
+}
+.post-grid-item:hover .title span {
+	border-width: 3px;
+}
+
+.post-grid-item .thumb {
+	flex: none;
+	height: auto;
+	max-width: 100%;
+	overflow: visible;
+	width: 100%;
+}
+.post-grid-item .thumb img {
+	left: auto;
+	position: relative;
+	top: auto;
+	transform: none;
+	width: 100%;
+}
+.post-grid-item .content {
+	margin: auto 0;
+	padding: 1em;
+	width: 100%;
+}
+.post-grid-item .title {
+	padding: 0;
+	text-align: center;
+    -webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	border-radius: 0 0.5em 0.5em 0;
+	color: #444;
+	display: -webkit-box;
+	flex: 2 1;
+	font-size: 1em;
+	font-weight: 600;
+	overflow: hidden;
+	padding: 2px 0.5em;
+	width: 100%;
+}
+.post-grid-item .content .title > * {
+	font-size: 1em;
+	font-weight: 600;
+    margin-bottom: 0;
+}
+.grid-cols-4 {
+    --w-gcol-max-w-pr: 25%;
+    --w-gcol-max-w-fr: 0.25fr;
+    grid-template-columns: repeat(auto-fit, minmax(max(calc(20% - 7px), 229px), var(--w-grid-cols-max-width-fr, 1fr)));
+}
+
+.grid-cols-3 {
+	--w-gcol-max-w-pr: 33.33333%;
+	--w-gcol-max-w-fr: 0.33333fr;
+	grid-template-columns: repeat(
+		auto-fit,
+		minmax(max(calc(25% - 6.5px), 236px), var(--w-grid-cols-max-width-fr, 1fr))
+	);
+}
+.grid-cols-2 {
+    --w-gcol-max-w-pr: 50%;
+    --w-gcol-max-w-fr: 0.5fr;
+    grid-template-columns: repeat(auto-fit, minmax(max(calc(33.33333% - 5.66667px), 273px), var(--w-grid-cols-max-width-fr, 1fr)));
+}
+[class*="grid-cols-"] {
+	grid-gap: 10px;
+	display: grid;
+	grid-template-rows: minmax(min-content, max-content);
+}
+
+.post-grid-item.vertical .content .description{
+	font-size: .8em;
+}
