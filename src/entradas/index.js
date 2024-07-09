@@ -199,7 +199,7 @@ registerBlockType('rafax/cluster-entradas', {
 								let selectedPostsArray = [];
 								selectedPosts.map((postName) => {
 									const matchingPost = allPosts.find((post) => {
-										return post.title.raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === postName;
+										return post.title.raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === postName; 
 									});
 
 									if (matchingPost !== undefined) {
