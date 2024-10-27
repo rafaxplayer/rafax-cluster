@@ -5,7 +5,7 @@
  * Requires at least: 6.1
  * Requires PHP:      7.0
  * Version:          1.0
- * Author:            The WordPress Contributors
+ * Author:            Rafax
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       rafax-cluster
@@ -457,8 +457,11 @@ class RafaxCluster
 				if ($attributes['rand']) {
 					shuffle($csv);
 				}
+				$wrapper_attributes = get_block_wrapper_attributes([
+					'class' => 'cluster cluster-posts style-4'
+				]);
 
-				$output = '<div class="cluster cluster-posts style-4">';
+				$output = '<div '.$wrapper_attributes.'>';
 
 				// mostrar los encabezados al admin solo
 				if (current_user_can('administrator')) {
@@ -515,7 +518,11 @@ class RafaxCluster
 
 		$target = $attributes['targetBlank'] ? 'target="_blank"' : '';
 
-		$output = '<div class="cluster cluster-cats ' . $attributes['styleGrid'] . ' style-4 ">';
+		$wrapper_attributes = get_block_wrapper_attributes([
+			'class' => 'cluster cluster-cats ' . $attributes['styleGrid'] . ' style-4 '
+		]);
+
+		$output = '<div '.$wrapper_attributes.'>';
 
 		foreach ($categories as $cat) {
 
@@ -594,7 +601,11 @@ class RafaxCluster
 
 		}
 
-		$output = '<div class="cluster cluster-posts ' . $attributes['styleGrid'] . ' style-4">';
+		$wrapper_attributes = get_block_wrapper_attributes([
+			'class' => 'cluster cluster-cats ' . $attributes['styleGrid'] . ' style-4 '
+		]);
+
+		$output = '<div ' . $wrapper_attributes . '>';
 
 		foreach ($posts as $post) {
 			$output .= '<a id="' . esc_attr($post->ID) . '" href="' . esc_url(get_the_permalink($post->ID)) . '" class="post-grid-item vertical">';
@@ -618,6 +629,7 @@ class RafaxCluster
 
 	}
 
+	
 	function customCategoryBlocks($block_categories, $block_editor_context)
 	{
 		array_push(

@@ -35,7 +35,7 @@ registerBlockType('rafax/cluster-entradas', {
 		},
 		numberPosts: {
 			type: 'string',
-			default: 20,
+			default: 6,
 		},
 		orderBy: {
 			type: 'string',
