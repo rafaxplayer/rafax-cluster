@@ -1,13 +1,13 @@
-const { ToolbarGroup, ToolbarDropdownMenu, SelectControl, Spinner } = wp.components;
+const { ToolbarGroup, ToolbarDropdownMenu,ToolbarButton, SelectControl, Spinner } = wp.components;
 const { BlockControls } = wp.blockEditor;
-import { grid } from '@wordpress/icons';
+import { grid, funnel } from '@wordpress/icons';
 
 export const Loading = ({ label }) => (<div className="rafax-cluster-spinner">
     <Spinner />
     {label}
 </div>)
 
-export const BlockStyles = ({ setAttributes }) => (<BlockControls>
+export const ToolbarOptions = ({ setAttributes }) => (<BlockControls>
     <ToolbarGroup>
         <ToolbarDropdownMenu
             icon={grid}
@@ -16,24 +16,25 @@ export const BlockStyles = ({ setAttributes }) => (<BlockControls>
 
                 {
                     title: 'Grid cols 2',
-
                     onClick: () => setAttributes({ styleGrid: 'grid-cols-2' }),
+                    
                 },
                 {
                     title: 'Grid cols 3',
-
                     onClick: () => setAttributes({ styleGrid: 'grid-cols-3' }),
+                     
                 },
                 {
                     title: 'Grid cols 4',
-
                     onClick: () => setAttributes({ styleGrid: 'grid-cols-4' }),
+                     
                 },
 
             ]}
         />
 
     </ToolbarGroup>
+   
 </BlockControls>)
 
 

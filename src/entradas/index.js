@@ -5,11 +5,9 @@ const { __ } = wp.i18n;
 const { PanelBody, Spinner, Placeholder, ToggleControl, SelectControl, FormTokenField, Disabled, RangeControl } = wp.components
 const { InspectorControls } = wp.blockEditor;
 
-import { BlockStyles, SelectorCats, Loading } from '../sharecomponents';
+import { ToolbarOptions, SelectorCats, Loading } from '../sharecomponents';
 import { post } from '@wordpress/icons';
 import ServerSideRender from '@wordpress/server-side-render';
-
-
 
 registerBlockType('rafax/cluster-entradas', {
 
@@ -69,7 +67,7 @@ registerBlockType('rafax/cluster-entradas', {
 		};
 
 	})(({ categories, allPosts, attributes, setAttributes }) => {
-
+		//resetear attributos
 		const resetAttributes = () => {
 			setAttributes({
 				includePosts: [],
@@ -79,6 +77,14 @@ registerBlockType('rafax/cluster-entradas', {
 
 			});
 		};
+		// funcion para limpiar los titulos de caracteres rarros y html y espacios
+		const normalizeTitle = (title) => title
+			.toLowerCase()
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '') // Elimina tildes y otros caracteres de acentuación
+			.replace(/<[^>]+>/g, '') // Elimina etiquetas HTML
+			.trim();
+
 		const isLoading = !categories || !allPosts;
 
 		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category } = attributes;
@@ -94,36 +100,40 @@ registerBlockType('rafax/cluster-entradas', {
 		let excludePostsValue = [];
 		let includePostsValue = [];
 
+		let postsById = {};
 		if (allPosts !== null) {
 
-			postNames = allPosts?.map((post) => post.title.raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+			postNames = allPosts?.map((post) => normalizeTitle(post.title.raw));
 
-			// rellenar el selector de excluir posts
+			//Convertir allposts en un obejto de ids para facilitar la busqueda
+			postsById = allPosts.reduce((acc, post) => {
+				acc[post.id] = post;
+				return acc;
+			}, {});
+
+			// Rellenar el selector de esxcluir posts
 			excludePostsValue = excludePosts?.map((postId) => {
-				let wantedPost = allPosts?.find((post) => {
-					return post.id === postId;
-				});
-				if (wantedPost === undefined || !wantedPost) {
+				let wantedPost = postsById[postId]; // Buscar el post directamente por ID
+				if (!wantedPost) {
 					return false;
 				}
-				return wantedPost.title.raw;
+				return normalizeTitle(wantedPost.title.raw);
 			});
-
-			// rellenar el selector de incluir posts
+		
+			// Rellenar el selector de incluir posts
 			includePostsValue = includePosts?.map((postId) => {
-				let wantedPost = allPosts?.find((post) => {
-					return post.id === postId;
-				});
-				if (wantedPost === undefined || !wantedPost) {
+				let wantedPost = postsById[postId]; // Buscar el post directamente por ID
+				if (!wantedPost) {
 					return false;
 				}
-				return wantedPost.title.raw;
+				return normalizeTitle(wantedPost.title.raw);
 			});
+						
 		}
 
 		return (
 			<Fragment>
-				<BlockStyles setAttributes={setAttributes} />
+				<ToolbarOptions setAttributes={setAttributes} />
 				<InspectorControls>
 					<PanelBody title={__('Opciones', 'rafax-cluster')} initialOpen={true}>
 						<ToggleControl
@@ -136,9 +146,9 @@ registerBlockType('rafax/cluster-entradas', {
 							value={typeSelect}
 							options={[{ label: 'Últimas entradas', value: '1' }, { label: 'Entradas de una categoría', value: '2' }, { label: 'Elegir entradas', value: '3' }]}
 							onChange={(value) => {
-
-								setAttributes({ typeSelect: value })
 								resetAttributes()
+								setAttributes({ typeSelect: value })
+
 							}}
 						/>
 
@@ -155,22 +165,18 @@ registerBlockType('rafax/cluster-entradas', {
 								'rafax-cluster'
 							)}
 							onChange={(selectedPosts) => {
-								// Build array of selected posts.
-								let selectedPostsArray = [];
-								selectedPosts.map(
-									(postName) => {
-										const matchingPost = allPosts.find((post) => {
-																						
-											return post.title.raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === postName;
-										});
-										if (matchingPost !== undefined) {
-											selectedPostsArray.push(matchingPost.id);
-										}
-									}
-								)
+
+								const selectedPostsArray = selectedPosts.map((postName) => {
+									const matchingPost = allPosts.find((post) => {
+										return normalizeTitle(post.title.raw) === normalizeTitle(postName);
+									});
+									return matchingPost ? matchingPost.id : null; // Retorna el ID o null.
+								}).filter(Boolean); // Filtra valores nulos.
+
 								setAttributes({ includePosts: selectedPostsArray });
 							}}
 						/>}
+
 						{(typeSelect === '1' || typeSelect === '2') && <RangeControl
 							label={__(
 								'Numero de posts',
@@ -195,18 +201,14 @@ registerBlockType('rafax/cluster-entradas', {
 								'rafax-cluster'
 							)}
 							onChange={(selectedPosts) => {
-								// Build array of selected posts.
-								let selectedPostsArray = [];
-								selectedPosts.map((postName) => {
-									const matchingPost = allPosts.find((post) => {
-										return post.title.raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === postName; 
-									});
 
-									if (matchingPost !== undefined) {
-										selectedPostsArray.push(matchingPost.id);
-									}
-								}
-								)
+								const selectedPostsArray = selectedPosts.map((postName) => {
+									const matchingPost = allPosts.find((post) => {
+										return normalizeTitle(post.title.raw) === normalizeTitle(postName);
+									});
+									return matchingPost ? matchingPost.id : null; // Retorna el ID o null.
+								}).filter(Boolean); // Filtra valores nulos.
+
 								setAttributes({ excludePosts: selectedPostsArray });
 							}}
 						/>}

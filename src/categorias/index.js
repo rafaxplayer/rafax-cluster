@@ -2,14 +2,14 @@ const { registerBlockType } = wp.blocks;
 const { __ } = wp.i18n;
 const { withSelect } = wp.data;
 const { Fragment } = wp.element;
-const { PanelBody, RangeControl, Spinner, Placeholder, ToggleControl, FormTokenField, Disabled } = wp.components;
+const { PanelBody, RangeControl, Placeholder, ToggleControl, FormTokenField, Disabled } = wp.components;
 const { InspectorControls } = wp.blockEditor;
 
 import ServerSideRender from '@wordpress/server-side-render';
 
 import { postCategories } from '@wordpress/icons';
 
-import { BlockStyles, SelectorCats, Loading } from '../sharecomponents';
+import { ToolbarOptions, SelectorCats, Loading } from '../sharecomponents';
 
 registerBlockType('rafax/cluster-categorias', {
     title: __('Rafax Cluster de categorías', 'rafax-cluster'),
@@ -22,7 +22,7 @@ registerBlockType('rafax/cluster-categorias', {
         },
         showParent: {
             type: 'string',
-            default: 0
+            default: '0'
         },
         showImages: {
             type: 'boolean',
@@ -30,9 +30,13 @@ registerBlockType('rafax/cluster-categorias', {
         },
         numberCats: {
             type: 'string',
-            default: 100
+            default: '100'
         },
         hideEmpty: {
+            type: 'boolean',
+            default: false
+        },
+        showSearch: {
             type: 'boolean',
             default: false
         },
@@ -93,13 +97,14 @@ registerBlockType('rafax/cluster-categorias', {
 
         const isloading = !categories;
 
-        const { excludeCats, showImages, numberCats, hideEmpty, showDescription, showCount, showOnlyParent } = attributes;
+        const { excludeCats, showImages, showSearch, numberCats, hideEmpty, showDescription, showCount, showOnlyParent } = attributes;
 
-        const handleChangeShowOnlyParent = (value) => setAttributes({ showOnlyParent: value });
-        const handleChangeHideEmpty = (value) => setAttributes({ hideEmpty: value });
-        const handleChangeShowImages = (value) => setAttributes({ showImages: value });
+        const handleShowOnlyParent = (value) => setAttributes({ showOnlyParent: value });
+        const handleHideEmpty = (value) => setAttributes({ hideEmpty: value });
+        const handleShowImages = (value) => setAttributes({ showImages: value });
         const handlenumberCats = (value) => setAttributes({ numberCats: String(value) });
-        const handleshowParent = (value) => setAttributes({ showParent: undefined === value ? 0 : value });
+        const handleShowSearch = (value) => setAttributes({ showSearch: value });
+        const handleshowParent = (value) => setAttributes({ showParent: value === undefined ? '0' : value });
         const handleTargetBlank = (value) => setAttributes({ targetBlank: value });
         const handleshowCount = (value) => setAttributes({ showCount: value });
         const handleshowdescription = (value) => setAttributes({ showDescription: value });
@@ -114,29 +119,31 @@ registerBlockType('rafax/cluster-categorias', {
             catsNames = allCategories?.map((cat) => cat.name) || [];
             catsFieldValue = excludeCats?.map((catId) => allCategories.find((cat) => cat.id === catId)?.name || false) || [];
             categoryOptions = allCategories?.map(category => ({ label: category.name, value: category.id })) || [];
-
         }
-
         return (
             <Fragment>
-                <BlockStyles setAttributes={setAttributes} />
-
+                <ToolbarOptions setAttributes={setAttributes} />
                 <InspectorControls>
                     <PanelBody title={__('Opciones cluster categorías', 'rafax-cluster')} initialOpen={true}>
                         <ToggleControl
                             label={__('Mostrar solo categorías padre', 'rafax-cluster')}
                             checked={showOnlyParent}
-                            onChange={handleChangeShowOnlyParent}
+                            onChange={handleShowOnlyParent}
                         />
                         <ToggleControl
                             label={__('Ocultar categorías vacias', 'rafax-cluster')}
                             checked={hideEmpty}
-                            onChange={handleChangeHideEmpty}
+                            onChange={handleHideEmpty}
                         />
                         <ToggleControl
                             label={__('Mostrar imagenes', 'rafax-cluster')}
                             checked={showImages}
-                            onChange={handleChangeShowImages}
+                            onChange={handleShowImages}
+                        />
+                        <ToggleControl
+                            label={__('Mostrar buscador', 'rafax-cluster')}
+                            checked={showSearch}
+                            onChange={handleShowSearch}
                         />
                         {showImages && <>
                             <a href={phpData.pSetUrl}>{__('Instrucciones para mostrar imagenes', 'rafax-cluster')}</a>
@@ -182,17 +189,12 @@ registerBlockType('rafax/cluster-categorias', {
                             suggestions={catsNames}
                             onChange={(cats) => {
                                 // Build array of selected posts.
-                                let selectedCatsArray = [];
-                                cats.map(
+                                let selectedCatsArray = cats.map(
                                     (catName) => {
-                                        const matchingCat = allCategories.find((cat) => {
-                                            return cat.name === catName;
-                                        });
-                                        if (matchingCat !== undefined) {
-                                            selectedCatsArray.push(matchingCat.id);
-                                        }
+                                        const matchingCat = allCategories.find((cat) => cat.name === catName);
+                                        return matchingCat ? matchingCat.id : null;
                                     }
-                                )
+                                ).filter(Boolean);
                                 setAttributes({ excludeCats: selectedCatsArray });
                             }}
                         />
@@ -223,7 +225,7 @@ registerBlockType('rafax/cluster-categorias', {
                     label={__('Rafax Cluster categorías', 'rafax-cluster')}
                     instructions={__('Selecciona las opciones para mostrar las categorías en el cluster.', 'rafax-cluster')}
                 >
-                    {isloading && <Loading label={__('Cargando...', 'rafax-cluster')}/>}
+                    {isloading && <Loading label={__('Cargando...', 'rafax-cluster')} />}
                     <Disabled>
                         <ServerSideRender
                             block={'rafax/cluster-categorias'}

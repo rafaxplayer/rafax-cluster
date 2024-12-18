@@ -4,7 +4,7 @@
  * Description:       Bloques de gutemberg para crear cluster de categorias y posts.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.1
+ * Version:          1.0.1
  * Author:            Rafax
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -17,7 +17,13 @@ if (!defined('ABSPATH')) {
 	exit; // Exit if accessed directly.
 }
 
-
+/**
+ * Registers the block using the metadata loaded from the `block.json` file.
+ * Behind the scenes, it registers also all assets so they can be enqueued
+ * through the block editor in the corresponding context.
+ *
+ * @see https://developer.wordpress.org/reference/functions/register_block_type/
+ */
 class RafaxCluster
 {
 
@@ -42,14 +48,10 @@ class RafaxCluster
 		//cargar scripts de admin para mediaupload
 		add_action('admin_enqueue_scripts', [$this, 'enqueueMediaScripts']);
 
-		// funciones ajax
-		add_action('wp_ajax_filter_categories', [$this, 'blockCategoriesCallback']);
-		add_action('wp_ajax_nopriv_filter_categories', [$this, 'blockCategoriesCallback']);
 
 
 		//Register blocks
 		if (!function_exists('register_block_type')) {
-		
 			return;
 		}
 
@@ -159,7 +161,7 @@ class RafaxCluster
 				'render_callback' => array($this, 'blockCategoriesCallback'),
 			)
 		);
-
+	
 
 	}
 
@@ -173,6 +175,7 @@ class RafaxCluster
 	}
 
 	/*SETTINGS AND OPTIONS*/
+
 	function setSettingsPage()
 	{
 		add_menu_page(__('Rafax clusters settings', 'rafax-cluster'), __('Rafax cluster', 'rafax-cluster'), 'manage_options', 'setSettings', [$this, 'settingsPage'], 'dashicons-welcome-widgets-menus', 80);
@@ -192,7 +195,7 @@ class RafaxCluster
 		);
 		add_settings_field(
 			'rfc_custom_image',
-			__('Imagen por defecto en bloque de entradas y categorias ( cuando no tienen )', 'rafax-cluster'),
+			__('Imagen por defecto en bloque de entradas y categorias', 'rafax-cluster'),
 			[$this, 'customImageOption'],
 			'rfc_options',
 			'settingsSection'
@@ -351,333 +354,224 @@ class RafaxCluster
 			)
 		);
 
-		wp_register_script('rfc_filter_categories', plugins_url('assets/ajax-filter.js', __FILE__), array('jquery'), filemtime(plugin_dir_path(__FILE__) . 'assets/ajax-filter.js'));
-
-		wp_localize_script(
-			'rfc_filter_categories',
-			'phpData',
-			[
-				'ajax_url' => admin_url('admin-ajax.php'),
-				'pSetUrl' => admin_url('admin.php?page=setSettings'),
-			]
-		);
-
 		// estilos
-		wp_register_style('rfc-editor-styles', plugins_url('assets/editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'assets/editor.css'));
+		wp_register_style('rfc-editor-styles', plugins_url('editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'editor.css'));
 
 		// estilos frontend
 		wp_register_style('rfc-frontend-styles', plugins_url('style.css', __FILE__), array(), filemtime(plugin_dir_path(__FILE__) . 'style.css'));
 
-		wp_enqueue_script('rfc_filter_categories');
-
 
 	}
 
-	/* BLOCKS Functions*/
-	function getPostImage()
+	/* BLOCKS */
+	// csv to array for fc_block_directorist_callback
+	function csvToArray($filename, $count)
+	{
+		$csvData = [];
+		if (($handle = fopen($filename, "r")) !== FALSE) {
+			$headers = fgetcsv($handle, 1000, ",");
+			while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+				$row = array();
+				for ($i = 0; $i < count($headers); $i++) {
+					$row[$headers[$i]] = $data[$i];
+				}
+				$csvData[] = $row;
+				if (count($csvData) > $count) {
+					break;
+				}
+			}
+			fclose($handle);
+		}
+		return $csvData;
+	}
+
+	// mapped_implode for fc_block_directorist_callback
+	function mapped_implode($glue, $array)
+	{
+		return implode(
+			$glue,
+			array_map(
+				function ($k, $v) {
+					return '[' . $v . ']';
+				},
+				array_keys($array),
+				array_values($array)
+			)
+		);
+	}
+
+	function getImageDefault()
 	{
 		$options = get_option('rfc_options');
 
-		$imageSize = isset($options['rfc_images_size']) ? $options['rfc_images_size'] : 'medium';
+		$imageDefault = $options['rfc_custom_image'];
 
-		return has_post_thumbnail() ? get_the_post_thumbnail_url(null, $imageSize):'';
-
+		return $imageDefault ? $imageDefault : '';
 	}
 
-	/*obtener imagenes de las categorias*/
-	function getCategoryImage($cat)
+	function get_block_attributtes($attributes)
 	{
-		if (defined('WP_DEBUG') && WP_DEBUG) {
-			error_log('Category Object: ' . print_r($cat, true));
-			error_log('AJAX Data: ' . print_r($_POST, true));
-		}
-		// Validar el objeto de categoría
-		if (!is_object($cat) || !isset($cat->term_id)) {
-			return ''; // Retorna vacío si no es un objeto de término válido
-		}
-
-		// Obtener las opciones generales del plugin o tema
-		$options = get_option('rfc_options', []);
-		$default_image_url = !empty($options['rfc_custom_image']) ? esc_url($options['rfc_custom_image']) : '';
-		$image_size = $options['rfc_images_size'] ?? 'medium';
-
-		// Inicializar la URL de la imagen
-		$image_url = '';
-
-		// Prioridad 1: Plugin "z Taxonomy Image"
-		if (function_exists('z_taxonomy_image_url')) {
-			$plugin_image_url = z_taxonomy_image_url($cat->term_id, $image_size);
-			if ($plugin_image_url) {
-				$image_url = esc_url($plugin_image_url);
-			}
-		}
-		// Prioridad 2: Tema "Wasabi"
-		elseif (defined('WASABI_THEME_PATH')) {
-			$wasabi_image_id = get_term_meta($cat->term_id, 'wasabi_hero_image_id', true);
-			if ($wasabi_image_id) {
-				$image_url = esc_url(wp_get_attachment_image_url($wasabi_image_id, $image_size));
-			}
-		}
-		// Prioridad 3: Tema "ASAP"
-		elseif (defined('ASAP_THEME_DIR')) {
-			$asap_image_id = get_term_meta($cat->term_id, 'category-cover-image-id', true);
-			if ($asap_image_id) {
-				$image_url = esc_url(wp_get_attachment_image_url($asap_image_id, $image_size));
-			}
-		}
-
-		
-		// Retornar la URL de la imagen o la imagen por defecto si no se encuentra
-		return $image_url ?: $default_image_url;
-	}
-
-
-	/* Callback to register block categories and ajax categories filter*/
-	function blockCategoriesCallback($attributes, $content = null)
-	{
-		$attributes = wp_parse_args($attributes, [
-			'hideEmpty' => false,
-			'excludeCats' => [],
-			'numberCats' => -1,
-			'showOnlyParent' => false,
-			'showParent' => 0,
-			'showSearch' => false,
-			'targetBlank' => false,
-			'showImages' => false,
-			'showCount' => false,
-			'showDescription' => false,
-			'styleGrid' => 'grid-cols-3'
-
+		return get_block_wrapper_attributes([
+			'class' => 'cluster cluster-cats ' . $attributes['styleGrid'] . ' style-4 '
 		]);
-
-		//convertir el array attributes en variables
-		$hideEmpty = $attributes['hideEmpty'];
-		$excludeCats = $attributes['excludeCats'];
-		$numberCats = $attributes['numberCats'];
-		$showOnlyParent = $attributes['showOnlyParent'];
-		$showParent = $attributes['showParent'];
-		$showSearch = $attributes['showSearch'];
-		$targetBlank = $attributes['targetBlank'];
-		$showImages = $attributes['showImages'];
-		$showCount = $attributes['showCount'];
-		$showDescription = $attributes['showDescription'];
-		$styleGrid = $attributes['styleGrid'];
+	}
 
 
-		$isAjax = defined('DOING_AJAX') && DOING_AJAX;
+	function blockCategoriesCallback($attributes, $content)
+	{
+		$args = array(
+			'taxonomy' => 'category',
+			'hide_empty' => $attributes['hideEmpty'],
+			'exclude' => $attributes['excludeCats'],
+		);
 
-		$categories = null;
-		// si recibimos la peticion desde el filtro por ajax
-		if ($isAjax) {
+		$options = get_option('rfc_options');
 
-			if (isset($_POST['letter']) && !empty($_POST['letter'])) {
-				$letter = sanitize_text_field($_POST['letter']);
-				$hideEmpty = $_POST['hideEmpty'];
-				$showOnlyParent = $_POST['showOnlyParent'];
-				$targetBlank = $_POST['targetBlank'];
-				$showImages = $_POST['showImages'];
-				$showCount = $_POST['showCount'];
-				$showDescription = $_POST['showDescription'];
-				$styleGrid = $_POST['styleGrid'];
-			} else {
-				wp_send_json_error(['message' => 'Letra no proporcionada o inválida.']);
-			}
+		$imageSize = $options['rfc_images_size'];
 
-			add_filter('terms_clauses', function ($clauses, $taxonomy, $args) use ($letter) {
-				global $wpdb;
+		$args['number'] = $attributes['numberCats'] < 1 ? -1 : $attributes['numberCats'];
 
-				// Modificar la cláusula WHERE para filtrar nombres que empiecen con la letra
-				$clauses['where'] .= $wpdb->prepare(" AND t.name LIKE %s", $letter . '%');
-
-				return $clauses;
-			}, 10, 3);
-
-			$categories = get_terms([
-				'taxonomy' => 'category',
-				'hide_empty' => $hideEmpty,
-			]);
-			//error_log(print_r($categories));
-
-		} else {
-			// Flujo normal del bloque sin ajax
-			$args = [
-				'taxonomy' => 'category',
-				'hide_empty' => $hideEmpty,
-				'exclude' => $excludeCats,
-				'number' => ($numberCats > 0) ? $numberCats : -1,
-			];
-
-			if ($showOnlyParent) {
-				$args['parent'] = 0;
-			}
-
-			if ($showParent > 0) {
-				$args['parent'] = $showParent;
-			}
-			$categories = get_categories($args);
+		if ($attributes['showOnlyParent']) {
+			$args['parent'] = 0;
 		}
+
+		if ($attributes['showParent'] > 0) {
+			$args['parent'] = $attributes['showParent'];
+		}
+
+		$output = "";
+
+		// HTML del abecedario
+		if ($attributes['showSearch']) {
+
+			$alphabet = range('A', 'Z');
+
+			$output .= '<div class="alphabet-filter">';
+			foreach ($alphabet as $letter) {
+				$output .= '<a href="#" data-letter="' . $letter . '">' . $letter . '</a>';
+			}
+			$output .= '</div>';
+		}
+
+		$categories = get_categories($args);
 
 
 		if (!$categories) {
 
-			$errorMessage = '<p style="color:red;font-weight:bold">' . esc_html__('No hay categorías disponibles.', 'rafax-cluster') . '</p>';
+			$output .= sprintf('<p style="color:red;font-weight:bold">%s</p>', __('No hay categorias', 'rafax-cluster'));
 
-			if ($isAjax) {
-				wp_send_json_error(['message' => $errorMessage]);
+
+		} else {
+
+			$target = $attributes['targetBlank'] ? 'target="_blank"' : '';
+
+
+
+			$output .= '<div ' . $this->get_block_attributtes($attributes) . '>';
+
+			foreach ($categories as $cat) {
+
+				$output .= '<a ' . $target . ' class="post-grid-item vertical" href="' . esc_url(get_category_link($cat->term_id)) . '">';
+
+				if ($attributes['showImages']) {
+					$output .= '<div class="thumb">';
+
+					//compatibilidad con imagenes en el bloque de categoria si esta presente el plugin "Images Category" o el tema "Wasabi"
+					$image_url = $this->getImageDefault();
+
+					if (function_exists('z_taxonomy_image_url') && z_taxonomy_image_url($cat->term_id)) {
+
+						$image_url = esc_url(z_taxonomy_image_url($cat->term_id, $imageSize));
+					} elseif (defined('WASABI_THEME_PATH')) {
+
+						$image_id = get_term_meta($cat->term_id, 'wasabi_hero_image_id', true);
+
+						if ($image_id) {
+							$image_url = esc_url(wp_get_attachment_image_url($image_id, $imageSize));
+
+						}
+
+					}
+					$output .= $image_url ? sprintf('<img src="%s" alt="%s" loading="lazy"/>', $image_url, esc_attr($cat->name)) : '';
+					$output .= '</div>';
+
+				}
+
+				$output .= '<div class="content" >';
+				$output .= '<div class="title" >';
+				$output .= $attributes['showCount'] ? sprintf('<h3>%s ( %s )</h3>', esc_html($cat->name), $cat->count) : sprintf('<h3>%s</h3>', esc_html($cat->name));
+				$output .= '</div>';
+				$output .= $attributes['showDescription'] ? '<div class="description" ><p>' . esc_html($cat->description) . '</p></div> ' : '';
+				$output .= '</div>';
+				$output .= '</a>';
+
 			}
 
-			return $errorMessage;
+			$output .= '</div>';
 		}
-
-		$output = [];
-
-		if ($showSearch) {
-			$alphabet = range('A', 'Z');
-			$output[] = '<div class="alphabet-filter">';
-			$output[] = implode('', array_map(fn($letter) => '<a href="#" data-letter="' . $letter . '">' . $letter . '</a>', $alphabet));
-			$output[] = '</div>';
-		}
-
-		$output[] = $isAjax ? '' : '<div 
-		class="cluster cluster-cats ' . esc_attr($styleGrid) . ' style-4" 
-		data-show-images="' . esc_attr($showImages ? 'true' : 'false') . '" 
-		data-style-grid="' . esc_attr($styleGrid) . '" 
-		data-show-description="' . esc_attr($showDescription ? 'true' : 'false') . '" 
-		data-show-count="' . esc_attr($showCount ? 'true' : 'false') . '" 
-		data-target-blank="' . esc_attr($targetBlank ? 'true' : 'false') . '"
-		data-hide-empty="' . esc_attr($hideEmpty ? 'true' : 'false') . '">';
-
-
-
-		foreach ($categories as $cat) {
-
-			$image_url = $this->getCategoryImage($cat);
-
-			$imageTag = $showImages && $image_url
-				? sprintf('<img src="%s" alt="%s" loading="lazy"/>', $image_url, esc_attr($cat->name))
-				: '';
-
-			$description = $showDescription
-				? sprintf('<div class="description"><p>%s</p></div>', esc_html($cat->description))
-				: '';
-
-			$output[] = sprintf(
-				'<a %s class="post-grid-item vertical" href="%s">
-                <div class="thumb">%s</div>
-                <div class="content">
-                    <div class="title"><h3>%s%s</h3></div>
-                    %s
-                </div>
-            </a>',
-				$targetBlank ? 'target="_blank"' : '',
-				esc_url(get_category_link($cat->term_id)),
-				$imageTag,
-				esc_html($cat->name),
-				$showCount ? sprintf(' (%d)', $cat->count) : '',
-				$description
-			);
-		}
-
-		$output[] = $isAjax ? '' : '</div>';
-
-		$resultHtml = implode("\n", $output);
-
-		if ($isAjax) {
-			wp_send_json_success(['html' => $resultHtml]);
-
-		}
-
-		return $resultHtml;
-
+		return $output;
 	}
 
-	//callback to register posts block
-	function blockPostsCallback($attributes) {
-		// Validar atributos con valores por defecto
-		$defaults = [
-			'orderBy' => 'date',
-			'order' => 'DESC',
-			'includePosts' => [],
-			'excludePosts' => [],
-			'numberPosts' => -1,
-			'category' => 'all',
-			'styleGrid' => 'default',
-			'showFeaturedImage' => false,
-		];
-		$attributes = wp_parse_args($attributes, $defaults);
-	
+
+	//callback to register block
+	function blockPostsCallback($attributes)
+	{
 		$postId = get_the_ID();
-	
-		// Construir argumentos para WP_Query
-		$args = [
+
+		$options = get_option('rfc_options');
+
+		$imageSize = isset($options['rfc_images_size']) ? $options['rfc_images_size'] : 'medium';
+
+
+		$args = array(
 			'post_status' => 'publish',
-			'orderby' => sanitize_key($attributes['orderBy']),
-			'order' => sanitize_key($attributes['order']),
-		];
-	
-		if (empty($attributes['includePosts'])) {
-			$args['posts_per_page'] = $attributes['numberPosts'] > 0 ? (int) $attributes['numberPosts'] : -1;
-			$args['post__not_in'] = array_merge($attributes['excludePosts'], [$postId]);
-	
-			if (!empty($attributes['category']) && $attributes['category'] !== 'all') {
-				$args['cat'] = (int) $attributes['category'];
+			'orderby' => $attributes['orderBy'],
+			'order' => $attributes['order']
+		);
+
+		if (count($attributes['includePosts']) === 0) {
+
+			$args['numberposts'] = empty($attributes['numberPosts']) ? -1 : $attributes['numberPosts'];
+			$args['exclude'] = array_merge($attributes['excludePosts'], array($postId));
+			error_log($attributes['category']);
+			if ($attributes['category'] !== 'all') {
+				$args['category'] = $attributes['category'];
 			}
 		} else {
-			$args['post__in'] = array_map('intval', $attributes['includePosts']);
+			$args['include'] = $attributes['includePosts'];
 		}
-	
-		// Aplicar filtro para extensibilidad
-		$args = apply_filters('block_posts_query_args', $args, $attributes);
-	
-		// Ejecutar consulta
-		$query = new WP_Query($args);
-	
-		// Verificar si hay posts
-		if (!$query->have_posts()) {
+
+		$posts = get_posts($args);
+
+		if (!$posts) {
 			return sprintf('<p style="color:red;font-weight:bold">%s</p>', __('No hay entradas', 'rafax-cluster'));
+
 		}
-	
-		// Construir salida HTML
-		$output = [];
-		$output[] = '<div class="cluster cluster-posts ' . esc_attr($attributes['styleGrid']) . ' style-4">';
-	
-		while ($query->have_posts()) {
-			$query->the_post();
-	
-			$post_classes = 'post-grid-item vertical';
-			$post_link = esc_url(get_the_permalink());
-			$post_id = esc_attr(get_the_ID());
-			$post_title = esc_html(get_the_title());
-	
-			$output[] = "<a id=\"{$post_id}\" href=\"{$post_link}\" class=\"{$post_classes}\">";
-	
-			// Mostrar imagen destacada si se requiere
+
+
+		$output = '<div ' . $this->get_block_attributtes($attributes) . '>';
+
+		foreach ($posts as $post) {
+			$output .= '<a id="' . esc_attr($post->ID) . '" href="' . esc_url(get_the_permalink($post->ID)) . '" class="post-grid-item vertical">';
 			if ($attributes['showFeaturedImage']) {
-				$thumbnail_url = get_the_post_thumbnail_url(get_the_ID(), 'medium');
-				if ($thumbnail_url) {
-					$output[] = '<div class="thumb">';
-					$output[] = '<img src="' . esc_url($thumbnail_url) . '" alt="' . $post_title . '" loading="lazy"/>';
-					$output[] = '</div>';
-				}
+				$image_url = has_post_thumbnail($post->ID) ? get_the_post_thumbnail_url($post->ID, $imageSize) : $this->getImageDefault();
+				$output .= '<div class="thumb">';
+				$output .= $image_url ? '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($post->post_title) . '" loading="lazy"/>' : '';
+				$output .= '</div>';
 			}
-	
-			// Mostrar contenido del post
-			$output[] = '<div class="content">';
-			$output[] = '<div class="title"><h3>' . $post_title . '</h3></div>';
-			$output[] = '</div>';
-	
-			$output[] = '</a>';
+			$output .= '<div class="content">';
+			$output .= '<div class="title" >';
+			$output .= '<h3>' . $post->post_title . '</h3>';
+			$output .= '</div>';
+			$output .= '</div>';
+			$output .= '</a>';
 		}
-	
-		// Restablecer datos globales del post
-		wp_reset_postdata();
-	
-		$output[] = '</div>';
-	
-		// Unir y retornar salida
-		return implode("\n", $output);
+
+		$output .= '</div>';
+
+		return $output;
+
 	}
-	
 
 
 	function customCategoryBlocks($block_categories, $block_editor_context)
