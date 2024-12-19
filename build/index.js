@@ -567,10 +567,18 @@ registerBlockType('rafax/cluster-entradas', {
         label: __('Páginas', 'rafax-cluster'),
         value: 'page'
       }],
-      onChange: value => setAttributes({
-        contentType: value
-      })
-    }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(SelectControl, {
+      onChange: value => {
+        setAttributes({
+          contentType: value
+        });
+        resetAttributes();
+        if (value === 'page' && typeSelect === '2') {
+          setAttributes({
+            typeSelect: '1'
+          });
+        }
+      }
+    }), ";", (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(SelectControl, {
       label: __('Tipo de seleccion', 'rafax-cluster'),
       value: typeSelect,
       options: [{

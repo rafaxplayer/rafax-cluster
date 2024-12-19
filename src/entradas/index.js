@@ -68,7 +68,7 @@ registerBlockType('rafax/cluster-entradas', {
 
 		const { attributes } = selectEditor.getBlock(clientId);
 
-		const contentType = attributes.contentType || 'post'; 
+		const contentType = attributes.contentType || 'post';
 		return {
 			// todas categorias o posts para el selector FormTokenField
 			categories: selectCore.getEntityRecords('taxonomy', 'category', { per_page: -1 }),// Categorias
@@ -150,23 +150,31 @@ registerBlockType('rafax/cluster-entradas', {
 							onChange={handleshowImage}
 							__nextHasNoMarginBottom={true}
 						/>
-						{ <SelectControl
+						{<SelectControl
 							label={__('Tipo de contenido', 'rafax-cluster')}
 							value={contentType}
 							options={[
 								{ label: __('Entradas', 'rafax-cluster'), value: 'post' },
 								{ label: __('Páginas', 'rafax-cluster'), value: 'page' },
 							]}
-							onChange={(value) => setAttributes({ contentType: value })}
-						/> }
+							onChange={(value) => {
+
+								setAttributes({ contentType: value })
+								resetAttributes()
+								if (value === 'page' && typeSelect === '2') {
+									setAttributes({ typeSelect: '1' });
+								}
+							}
+							}
+						/>};
 
 						<SelectControl
 							label={__('Tipo de seleccion', 'rafax-cluster')}
 							value={typeSelect}
 							options={[
 								{ label: 'Últimas entradas o paginas', value: '1' },
-								...(contentType === 'post' ? [{ label: 'Entradas de una categoría', value: '2' }]: []), 
-								 { label: 'Elegir entradas o paginas', value: '3' }]}
+								...(contentType === 'post' ? [{ label: 'Entradas de una categoría', value: '2' }] : []),
+								{ label: 'Elegir entradas o paginas', value: '3' }]}
 							onChange={(value) => {
 								resetAttributes()
 								setAttributes({ typeSelect: value })
