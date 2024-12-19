@@ -9,6 +9,7 @@ import { ToolbarOptions, SelectorCats, Loading } from '../sharecomponents';
 import { post } from '@wordpress/icons';
 import ServerSideRender from '@wordpress/server-side-render';
 
+
 registerBlockType('rafax/cluster-entradas', {
 
 	title: __('Rafax Cluster Entradas', 'rafax-cluster'),
@@ -18,6 +19,10 @@ registerBlockType('rafax/cluster-entradas', {
 		showFeaturedImage: {
 			type: 'boolean',
 			default: true,
+		},
+		contentType: {
+			type: 'string',
+			default: 'post',
 		},
 		includePosts: {
 			type: 'array',
@@ -31,6 +36,7 @@ registerBlockType('rafax/cluster-entradas', {
 			type: 'string',
 			default: 'all',
 		},
+
 		numberPosts: {
 			type: 'string',
 			default: 6,
@@ -52,7 +58,8 @@ registerBlockType('rafax/cluster-entradas', {
 		typeSelect: {
 			type: 'string',
 			default: '1'
-		}
+		},
+
 	},
 	edit: withSelect((select, { clientId }) => {
 
@@ -61,9 +68,11 @@ registerBlockType('rafax/cluster-entradas', {
 
 		const { attributes } = selectEditor.getBlock(clientId);
 
+		const contentType = attributes.contentType || 'post'; 
 		return {
-			categories: selectCore.getEntityRecords('taxonomy', 'category', { per_page: -1 }),
-			allPosts: selectCore.getEntityRecords('postType', 'post', { per_page: attributes.numberPosts }),
+			// todas categorias o posts para el selector FormTokenField
+			categories: selectCore.getEntityRecords('taxonomy', 'category', { per_page: -1 }),// Categorias
+			allPosts: selectCore.getEntityRecords('postType', contentType, { per_page: attributes.numberPosts }),// Posts o Paginas 
 		};
 
 	})(({ categories, allPosts, attributes, setAttributes }) => {
@@ -74,7 +83,6 @@ registerBlockType('rafax/cluster-entradas', {
 				excludePosts: [],
 				category: 'all',
 				numberPosts: '100',
-
 			});
 		};
 		// funcion para limpiar los titulos de caracteres rarros y html y espacios
@@ -87,7 +95,7 @@ registerBlockType('rafax/cluster-entradas', {
 
 		const isLoading = !categories || !allPosts;
 
-		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category } = attributes;
+		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category, contentType } = attributes;
 
 		const handleshowImage = (value) => setAttributes({ showFeaturedImage: value });
 		const handlenumberPosts = (value) => setAttributes({ numberPosts: String(value) });
@@ -119,7 +127,7 @@ registerBlockType('rafax/cluster-entradas', {
 				}
 				return normalizeTitle(wantedPost.title.raw);
 			});
-		
+
 			// Rellenar el selector de incluir posts
 			includePostsValue = includePosts?.map((postId) => {
 				let wantedPost = postsById[postId]; // Buscar el post directamente por ID
@@ -128,7 +136,7 @@ registerBlockType('rafax/cluster-entradas', {
 				}
 				return normalizeTitle(wantedPost.title.raw);
 			});
-						
+
 		}
 
 		return (
@@ -140,21 +148,36 @@ registerBlockType('rafax/cluster-entradas', {
 							label={__('Mostrar Imagen Destacada', 'rafax-cluster')}
 							checked={showFeaturedImage}
 							onChange={handleshowImage}
+							__nextHasNoMarginBottom={true}
 						/>
+						{ <SelectControl
+							label={__('Tipo de contenido', 'rafax-cluster')}
+							value={contentType}
+							options={[
+								{ label: __('Entradas', 'rafax-cluster'), value: 'post' },
+								{ label: __('Páginas', 'rafax-cluster'), value: 'page' },
+							]}
+							onChange={(value) => setAttributes({ contentType: value })}
+						/> }
+
 						<SelectControl
 							label={__('Tipo de seleccion', 'rafax-cluster')}
 							value={typeSelect}
-							options={[{ label: 'Últimas entradas', value: '1' }, { label: 'Entradas de una categoría', value: '2' }, { label: 'Elegir entradas', value: '3' }]}
+							options={[
+								{ label: 'Últimas entradas o paginas', value: '1' },
+								...(contentType === 'post' ? [{ label: 'Entradas de una categoría', value: '2' }]: []), 
+								 { label: 'Elegir entradas o paginas', value: '3' }]}
 							onChange={(value) => {
 								resetAttributes()
 								setAttributes({ typeSelect: value })
 
 							}}
+							__nextHasNoMarginBottom={true}
 						/>
 
 						{typeSelect === '3' && <FormTokenField
 							label={__(
-								'Mostrar solo estas entradas',
+								'Mostrar solo estas entradas o paginas',
 								'rafax-cluster'
 							)}
 
@@ -175,6 +198,7 @@ registerBlockType('rafax/cluster-entradas', {
 
 								setAttributes({ includePosts: selectedPostsArray });
 							}}
+							__nextHasNoMarginBottom={true}
 						/>}
 
 						{(typeSelect === '1' || typeSelect === '2') && <RangeControl
@@ -186,12 +210,13 @@ registerBlockType('rafax/cluster-entradas', {
 							onChange={handlenumberPosts}
 							min={1}
 							max={100}
+							__nextHasNoMarginBottom={true}
 
 						/>}
 
 						{attributes.typeSelect === '1' && <FormTokenField
 							label={__(
-								'Excluir entradas',
+								'Excluir entradas o paginas',
 								'rafax-cluster'
 							)}
 							value={excludePostsValue}
@@ -211,26 +236,33 @@ registerBlockType('rafax/cluster-entradas', {
 
 								setAttributes({ excludePosts: selectedPostsArray });
 							}}
+							__nextHasNoMarginBottom={true}
 						/>}
-						{attributes.typeSelect === '2' && <SelectorCats
+
+
+						{typeSelect === '2' && contentType === 'post' && <SelectorCats// selector de categorias
 							categories={categories}
 							label={__('Categoría', 'rafax-cluster')}
 							attributes={attributes}
 							defaultItem={{ label: __('Todas las Categorías', 'rafax-cluster'), value: 'all' }}
 							value={category}
-							onChange={handleCategory} />}
+							onChange={handleCategory}
+
+						/>}
 
 						<SelectControl
 							label={__('Ordenar por', 'rafax-cluster')}
 							value={orderBy}
 							options={[{ label: 'Título', value: 'title' }, { label: 'Fecha', value: 'date' }, { label: 'Aleatorio', value: 'rand' }]}
 							onChange={handleorderBy}
+							__nextHasNoMarginBottom={true}
 						/>
 						<SelectControl
 							label={__('Orden', 'rafax-cluster')}
 							value={order}
 							options={[{ label: 'Ascendente', value: 'ASC' }, { label: 'Descendente', value: 'DESC' }]}
 							onChange={handleOrder}
+							__nextHasNoMarginBottom={true}
 						/>
 					</PanelBody>
 				</InspectorControls>

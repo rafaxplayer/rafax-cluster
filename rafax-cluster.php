@@ -49,7 +49,7 @@ class RafaxCluster
 
 		//Register blocks
 		if (!function_exists('register_block_type')) {
-		
+
 			return;
 		}
 
@@ -61,6 +61,14 @@ class RafaxCluster
 					'showFeaturedImage' => array(
 						'type' => 'boolean',
 						'default' => true,
+					),
+					'contentType'=>array(
+						'type' => 'string',
+						'default' => 'post'
+					),
+					'postType' => array(
+						'type' => 'string',
+						'default' => '1'
 					),
 					'includePosts' => array(
 						'type' => 'array',
@@ -94,6 +102,7 @@ class RafaxCluster
 						'type' => 'string',
 						'default' => '1'
 					),
+					
 				),
 				'editor_script' => 'rfc_editor_script',
 				'editor_style' => 'rfc_editor-styles',
@@ -380,7 +389,7 @@ class RafaxCluster
 
 		$imageSize = isset($options['rfc_images_size']) ? $options['rfc_images_size'] : 'medium';
 
-		return has_post_thumbnail() ? get_the_post_thumbnail_url(null, $imageSize):'';
+		return has_post_thumbnail() ? get_the_post_thumbnail_url(null, $imageSize) : '';
 
 	}
 
@@ -426,7 +435,7 @@ class RafaxCluster
 			}
 		}
 
-		
+
 		// Retornar la URL de la imagen o la imagen por defecto si no se encuentra
 		return $image_url ?: $default_image_url;
 	}
@@ -592,7 +601,8 @@ class RafaxCluster
 	}
 
 	//callback to register posts block
-	function blockPostsCallback($attributes) {
+	function blockPostsCallback($attributes)
+	{
 		// Validar atributos con valores por defecto
 		$defaults = [
 			'orderBy' => 'date',
@@ -605,52 +615,56 @@ class RafaxCluster
 			'showFeaturedImage' => false,
 		];
 		$attributes = wp_parse_args($attributes, $defaults);
-	
+
 		$postId = get_the_ID();
-	
+
+		$content_type = isset($attributes['contentType']) ? $attributes['contentType'] : 'post';
 		// Construir argumentos para WP_Query
 		$args = [
+			'post_type' => $content_type,
 			'post_status' => 'publish',
 			'orderby' => sanitize_key($attributes['orderBy']),
 			'order' => sanitize_key($attributes['order']),
 		];
-	
+
+		
+		//var_dump($args);
 		if (empty($attributes['includePosts'])) {
 			$args['posts_per_page'] = $attributes['numberPosts'] > 0 ? (int) $attributes['numberPosts'] : -1;
 			$args['post__not_in'] = array_merge($attributes['excludePosts'], [$postId]);
-	
+
 			if (!empty($attributes['category']) && $attributes['category'] !== 'all') {
 				$args['cat'] = (int) $attributes['category'];
 			}
 		} else {
 			$args['post__in'] = array_map('intval', $attributes['includePosts']);
 		}
-	
+
 		// Aplicar filtro para extensibilidad
 		$args = apply_filters('block_posts_query_args', $args, $attributes);
-	
+
 		// Ejecutar consulta
 		$query = new WP_Query($args);
-	
+
 		// Verificar si hay posts
 		if (!$query->have_posts()) {
 			return sprintf('<p style="color:red;font-weight:bold">%s</p>', __('No hay entradas', 'rafax-cluster'));
 		}
-	
+
 		// Construir salida HTML
 		$output = [];
 		$output[] = '<div class="cluster cluster-posts ' . esc_attr($attributes['styleGrid']) . ' style-4">';
-	
+
 		while ($query->have_posts()) {
 			$query->the_post();
-	
+
 			$post_classes = 'post-grid-item vertical';
 			$post_link = esc_url(get_the_permalink());
 			$post_id = esc_attr(get_the_ID());
 			$post_title = esc_html(get_the_title());
-	
+
 			$output[] = "<a id=\"{$post_id}\" href=\"{$post_link}\" class=\"{$post_classes}\">";
-	
+
 			// Mostrar imagen destacada si se requiere
 			if ($attributes['showFeaturedImage']) {
 				$thumbnail_url = get_the_post_thumbnail_url(get_the_ID(), 'medium');
@@ -660,24 +674,24 @@ class RafaxCluster
 					$output[] = '</div>';
 				}
 			}
-	
+
 			// Mostrar contenido del post
 			$output[] = '<div class="content">';
 			$output[] = '<div class="title"><h3>' . $post_title . '</h3></div>';
 			$output[] = '</div>';
-	
+
 			$output[] = '</a>';
 		}
-	
+
 		// Restablecer datos globales del post
 		wp_reset_postdata();
-	
+
 		$output[] = '</div>';
-	
+
 		// Unir y retornar salida
 		return implode("\n", $output);
 	}
-	
+
 
 
 	function customCategoryBlocks($block_categories, $block_editor_context)

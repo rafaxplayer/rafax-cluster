@@ -42,11 +42,11 @@ export const SelectorCats = ({ categories: cats, label: label, help: help, disab
 
     let categoryOptions = [];
 
-    if (cats !== null) {
+    if ( cats !== null) {
 
-        categoryOptions = cats.map(category => ({
-            label: category.name,
-            value: category.id,
+        categoryOptions = cats.map(cat => ({
+            label: cat.name,
+            value: cat.id,
         }));
     }
 
@@ -62,6 +62,7 @@ export const SelectorCats = ({ categories: cats, label: label, help: help, disab
                 // Agrega más opciones de categorías según sea necesario
             ]}
             onChange={change}
+            __nextHasNoMarginBottom={true}
         />
 
     );
