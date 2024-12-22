@@ -25,25 +25,24 @@ class RafaxCluster
 	{
 
 		add_action('init', [$this, 'init']);
-		add_action('admin_menu', [$this, 'setSettingsPage']);
+
 		add_filter('block_categories_all', [$this, 'customCategoryBlocks'], 10, 2);
-
-
-	}
-
-	function init()
-	{
-		//enqueue scripts
-		$this->registerScripts();
-
+		add_action('admin_menu', [$this, 'setSettingsPage']);
 
 		//cargar scripts de admin para mediaupload
-		add_action('admin_enqueue_scripts', [$this, 'enqueueMediaScripts']);
+		add_action('admin_enqueue_scripts', [$this, 'enqueueBackendScripts']);
 
+		add_action('wp_enqueue_scripts', [$this, 'frontendScripts']);
+		
 		// funciones ajax
 		add_action('wp_ajax_filter_categories', [$this, 'blockCategoriesCallback']);
 		add_action('wp_ajax_nopriv_filter_categories', [$this, 'blockCategoriesCallback']);
 
+	}
+	//Init Hook
+
+	function init()
+	{
 
 		//Register blocks
 		if (!function_exists('register_block_type')) {
@@ -174,12 +173,62 @@ class RafaxCluster
 
 	}
 
+	/* REGISTER AND ENQUEUE SCRIPTS */
+	function frontendScripts()
+	{
+		wp_register_script('rfc_editor_script', plugins_url('build/index.js', __FILE__), array('wp-blocks', 'wp-element', 'wp-editor', 'wp-i18n', 'wp-components'), filemtime(plugin_dir_path(__FILE__) . 'build/index.js'));
+
+		wp_localize_script(
+			'rfc_editor_script',
+			'phpData',
+			array(
+				'pSetUrl' => admin_url('admin.php?page=setSettings'),
+			)
+		);
+		// script para Filtrado d ecategorias con el abcedario
+		wp_register_script('rfc_filter_categories', plugins_url('assets/ajax-filter.js', __FILE__), array('jquery'), filemtime(plugin_dir_path(__FILE__) . 'assets/ajax-filter.js'));
+
+		wp_localize_script(
+			'rfc_filter_categories',
+			'phpData',
+			[
+				'ajax_url' => admin_url('admin-ajax.php'),
+				'pSetUrl' => admin_url('admin.php?page=setSettings'),
+				'security' => wp_create_nonce('ajax_nonce'),
+			]
+		);
+		wp_enqueue_script('rfc_filter_categories');
+		// estilos
+		
+
+		// estilos frontend
+		wp_register_style('rfc-frontend-styles', plugins_url('style.css', __FILE__), array(), filemtime(plugin_dir_path(__FILE__) . 'style.css'));
+		wp_enqueue_style('rfc-frontend-styles');
+		
+
+		$options = get_option('rfc_options');
+		$custom_css = isset($options['rfc_custom_css']) ? $options['rfc_custom_css'] : '';
+
+		// Si hay CSS personalizado, agregarlo
+		if (!empty($custom_css)) {
+			// Encolar el archivo principal de estilos
+			wp_enqueue_style('rfc-frontend-styles', plugins_url('style.css', __FILE__));
+
+			// Agregar el CSS personalizado al frontend
+			wp_add_inline_style('rfc-frontend-styles', $custom_css);
+		}
+
+
+	}
 	// Necesario para poder usar la biblioteca de medios
-	function enqueueMediaScripts()
+	function enqueueBackendScripts()
 	{
 		if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'setSettings') {
 			wp_enqueue_media();
 		}
+		
+		wp_register_style('rfc-editor-styles', plugins_url('assets/editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'assets/editor.css'));
+		wp_enqueue_style('rfc-editor-styles');
 
 	}
 
@@ -187,12 +236,12 @@ class RafaxCluster
 	function setSettingsPage()
 	{
 		add_menu_page(__('Rafax clusters settings', 'rafax-cluster'), __('Rafax cluster', 'rafax-cluster'), 'manage_options', 'setSettings', [$this, 'settingsPage'], 'dashicons-welcome-widgets-menus', 80);
+
 		add_action('admin_init', [$this, 'setSettings']);
 	}
-
+	// Estableces campos para las opciones
 	function setSettings()
 	{
-
 		register_setting('rfc_options', 'rfc_options', function ($input) {
 			$output = [];
 			if (isset($input['rfc_custom_image_nonce']) && wp_verify_nonce($input['rfc_custom_image_nonce'], 'rfc_custom_image_nonce')) {
@@ -202,9 +251,8 @@ class RafaxCluster
 				$valid_sizes = ['thumbnail', 'medium', 'medium_large', 'large'];
 				$output['rfc_images_size'] = in_array($input['rfc_images_size'], $valid_sizes) ? $input['rfc_images_size'] : 'thumbnail';
 			}
-			
 			// Validar el CSS
-			if (isset($input['rfc_custom_css'])&& wp_verify_nonce($input['rfc_customcss_nonce'], 'rfc_customcss_nonce')) {
+			if (isset($input['rfc_custom_css'])) {
 				$output['rfc_custom_css'] = trim($input['rfc_custom_css']); // Eliminar espacios innecesarios
 			}
 			if (isset($input['rfc_remove_uninstall'])) {
@@ -224,7 +272,6 @@ class RafaxCluster
 		add_settings_field('rfc_images_size', __('Tamaño de las imágenes', 'rafax-cluster'), [$this, 'imagesSizeOption'], 'rfc_options', 'settingsSection');
 		add_settings_field('rfc_custom_css', __('CSS adicional', 'rafax-cluster'), [$this, 'customCssOption'], 'rfc_options', 'settingsSection');
 		add_settings_field('rfc_remove_uninstall', __('Eliminar datos al desinstalar', 'rafax-cluster'), [$this, 'removeUninstallOption'], 'rfc_options', 'settingsSection');
-
 
 	}
 
@@ -277,7 +324,7 @@ class RafaxCluster
 		</script>
 		<?php
 	}
-
+	// Callback para renderizar el campo de tamaño de imagen personalizada
 	function imagesSizeOption()
 	{
 
@@ -303,17 +350,18 @@ class RafaxCluster
 
 
 	}
+	// Callback para renderizar el campo de css personalizado
 	function customCssOption()
 	{
 
 		$options = get_option('rfc_options');
-		$nonce=wp_create_nonce('rfc_customcss_nonce');
+		wp_nonce_field('guardar_textarea', 'mi_textarea_nonce');
 		?>
-		<input type="hidden" name="rfc_options[rfc_customcss_nonce]" value="<?php echo esc_attr($nonce); ?>" />
 		<textarea name="rfc_options[rfc_custom_css]" id="rfc_custom_css" cols="50"
 			rows="8"><?php echo isset($options['rfc_custom_css']) ? esc_textarea($options['rfc_custom_css']) : ''; ?></textarea>
 		<?php
 	}
+	// Callback para renderizar la opcion de remover datos al desinstalar
 	function removeUninstallOption()
 	{
 		$options = get_option('rfc_options');
@@ -323,7 +371,7 @@ class RafaxCluster
 		<?php
 	}
 
-
+	// Callback para html  de la seccion de opciones 
 	function sectionCallback()
 	{
 		?>
@@ -337,14 +385,17 @@ class RafaxCluster
 		</ul>
 		<?php
 	}
-
+	// Pagina de opciones 
 	function settingsPage()
 	{
+		var_dump(get_option('rfc_options'));
 		if (!current_user_can('manage_options')) {
 			wp_die(__('You do not have sufficient permissions to access this page.', 'rafax-cluster'));
-		} ?>
+		}
+		?>
 
 		<div class="wrap">
+
 			<h2>
 
 				<?php _e('Rafax cluster', 'rafax-cluster'); ?>
@@ -358,53 +409,6 @@ class RafaxCluster
 		</div><?php
 	}
 
-
-	/* REGISTER AND ENQUEUE SCRIPTS */
-	function registerScripts()
-	{
-		wp_register_script('rfc_editor_script', plugins_url('build/index.js', __FILE__), array('wp-blocks', 'wp-element', 'wp-editor', 'wp-i18n', 'wp-components'), filemtime(plugin_dir_path(__FILE__) . 'build/index.js'));
-
-		wp_localize_script(
-			'rfc_editor_script',
-			'phpData',
-			array(
-				'pSetUrl' => admin_url('admin.php?page=setSettings'),
-			)
-		);
-
-		wp_register_script('rfc_filter_categories', plugins_url('assets/ajax-filter.js', __FILE__), array('jquery'), filemtime(plugin_dir_path(__FILE__) . 'assets/ajax-filter.js'));
-
-		wp_localize_script(
-			'rfc_filter_categories',
-			'phpData',
-			[
-				'ajax_url' => admin_url('admin-ajax.php'),
-				'pSetUrl' => admin_url('admin.php?page=setSettings'),
-				'security' => wp_create_nonce('ajax_nonce'),
-			]
-		);
-		wp_enqueue_script('rfc_filter_categories');
-
-		// estilos
-		wp_register_style('rfc-editor-styles', plugins_url('assets/editor.css', __FILE__), array('wp-edit-blocks'), filemtime(plugin_dir_path(__FILE__) . 'assets/editor.css'));
-
-		// estilos frontend
-		wp_register_style('rfc-frontend-styles', plugins_url('style.css', __FILE__), array(), filemtime(plugin_dir_path(__FILE__) . 'style.css'));
-
-		
-		 //añadir css de las opciones
-		$options = get_option('rfc_options');
-		$custom_css = isset($options['rfc_custom_css']) ? $options['rfc_custom_css'] : '';
-
-		// Si hay CSS personalizado, agregarlo
-		if (!empty($custom_css)) {
-						// Agregar el CSS personalizado al frontend
-			wp_add_inline_style('rfc-frontend-styles', $custom_css);
-		}
-		
-
-
-	}
 
 	/* BLOCKS Functions*/
 	function getPostImage()
@@ -662,7 +666,7 @@ class RafaxCluster
 
 		//var_dump($args);
 		if (empty($attributes['includePosts'])) {
-			$args['posts_per_page'] = $attributes['numberPosts'] > 0 ? (int) $attributes['numberPosts'] : -1;
+			$args['posts_per_page'] = $attributes['numberPosts'] > 0 ? (int) $attributes['numberPosts'] : 100;// limitamos como maximo 100 entradas (mas no tiene sentido en un cluster)
 			$args['post__not_in'] = array_merge($attributes['excludePosts'], [$postId]);
 
 			if (!empty($attributes['category']) && $attributes['category'] !== 'all') {
@@ -722,8 +726,6 @@ class RafaxCluster
 		// Unir y retornar salida
 		return implode("\n", $output);
 	}
-
-
 
 	function customCategoryBlocks($block_categories, $block_editor_context)
 	{

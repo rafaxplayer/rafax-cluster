@@ -24,7 +24,7 @@ registerBlockType('rafax/cluster-entradas', {
 			type: 'string',
 			default: 'post',
 		},
-		parentPage:{
+		parentPage: {
 			type: 'number', // Almacena el ID de la página padre
 			default: 0,
 		},
@@ -87,6 +87,7 @@ registerBlockType('rafax/cluster-entradas', {
 				excludePosts: [],
 				category: 'all',
 				numberPosts: '100',
+				parentPage:0
 			});
 		};
 		// funcion para limpiar los titulos de caracteres rarros y html y espacios
@@ -99,7 +100,7 @@ registerBlockType('rafax/cluster-entradas', {
 
 		const isLoading = !categories || !allPosts;
 
-		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category,parentPage, contentType } = attributes;
+		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category, parentPage, contentType } = attributes;
 
 		const handleshowImage = (value) => setAttributes({ showFeaturedImage: value });
 		const handlenumberPosts = (value) => setAttributes({ numberPosts: String(value) });
@@ -171,26 +172,13 @@ registerBlockType('rafax/cluster-entradas', {
 							}
 							}
 						/>};
-						{contentType === 'page' && <SelectControl
-							label={__('Seleccionar página padre', 'rafax-cluster')}
-							value={parentPage}
-							options={[
-								{ label: __('Ninguna', 'rafax-cluster'), value: 0 }, // Opción para no filtrar
-								...(allPosts ? allPosts.map((page) => ({
-									label: page.title.rendered,
-									value: page.id,
-								})) : []),
-							]}
-							onChange={(value) => setAttributes({ parentPage: parseInt(value, 10) })}
-							__nextHasNoMarginBottom={true}
-						/>}
 
 						<SelectControl
 							label={__('Tipo de seleccion', 'rafax-cluster')}
 							value={typeSelect}
 							options={[
 								{ label: 'Últimas entradas o paginas', value: '1' },
-								...(contentType === 'post' ? [{ label: 'Entradas de una categoría', value: '2' }] : []),
+								...(contentType === 'post' ? [{ label: 'Entradas de una categoría', value: '2' }] : [{ label: 'Pagina padre', value: '4' }]),
 								{ label: 'Elegir entradas o paginas', value: '3' }]}
 							onChange={(value) => {
 								resetAttributes()
@@ -199,6 +187,19 @@ registerBlockType('rafax/cluster-entradas', {
 							}}
 							__nextHasNoMarginBottom={true}
 						/>
+						{contentType === 'page' && typeSelect == "4" && <SelectControl
+							label={__('Seleccionar página padre', 'rafax-cluster')}
+							value={parentPage}
+							options={[
+								{ label: __('Ninguna', 'rafax-cluster'), value: 0 }, // Opción para no filtrar
+								...(allPosts ? allPosts.map((page) => ({
+									label: normalizeTitle(page.title.rendered),
+									value: page.id,
+								})) : []),
+							]}
+							onChange={(value) => setAttributes({ parentPage: parseInt(value, 10) })}
+							__nextHasNoMarginBottom={true}
+						/>}
 
 						{typeSelect === '3' && <FormTokenField
 							label={__(

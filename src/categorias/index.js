@@ -129,21 +129,25 @@ registerBlockType('rafax/cluster-categorias', {
                             label={__('Mostrar solo categorías padre', 'rafax-cluster')}
                             checked={showOnlyParent}
                             onChange={handleShowOnlyParent}
+                            __nextHasNoMarginBottom={true}
                         />
                         <ToggleControl
                             label={__('Ocultar categorías vacias', 'rafax-cluster')}
                             checked={hideEmpty}
                             onChange={handleHideEmpty}
+                            __nextHasNoMarginBottom={true}
                         />
                         <ToggleControl
                             label={__('Mostrar imagenes', 'rafax-cluster')}
                             checked={showImages}
                             onChange={handleShowImages}
+                            __nextHasNoMarginBottom={true}
                         />
                         <ToggleControl
                             label={__('Mostrar buscador', 'rafax-cluster')}
                             checked={showSearch}
                             onChange={handleShowSearch}
+                            __nextHasNoMarginBottom={true}
                         />
                         {showImages && <>
                             <a href={phpData.pSetUrl}>{__('Instrucciones para mostrar imagenes', 'rafax-cluster')}</a>
@@ -157,6 +161,7 @@ registerBlockType('rafax/cluster-categorias', {
                             onChange={handlenumberCats}
                             min={1}
                             max={100}
+                            __nextHasNoMarginBottom={true}
 
                         />
 
@@ -173,7 +178,9 @@ registerBlockType('rafax/cluster-categorias', {
                             attributes={attributes}
                             defaultItem={{ label: __('Buscar categoría', 'rafax-cluster'), value: 0 }}
                             value={attributes.showParent}
-                            onChange={handleshowParent} />
+                            onChange={handleshowParent} 
+                            __nextHasNoMarginBottom={true}
+                            />
 
 
                         <FormTokenField
@@ -206,17 +213,20 @@ registerBlockType('rafax/cluster-categorias', {
                             label={__('Abrir enlaces en una nueva ventana', 'rafax-cluster')}
                             checked={attributes.targetBlank}
                             onChange={handleTargetBlank}
+                            __nextHasNoMarginBottom={true}
                         />
                         <ToggleControl
                             label={__('Mostrar contador de entradas', 'rafax-cluster')}
                             checked={showCount}
                             onChange={handleshowCount}
+                            __nextHasNoMarginBottom={true}
                         />
                         <ToggleControl
 
                             label={__('Mostrar descripción de la categoría', 'rafax-cluster')}
                             checked={showDescription}
                             onChange={handleshowdescription}
+                            __nextHasNoMarginBottom={true}
                         />
                     </PanelBody>
                 </InspectorControls>

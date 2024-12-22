@@ -43,7 +43,12 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 (or jpg, jpeg, gif).
 2. This is the second screen shot
 
+
 == Changelog ==
+
+= 1.2 =
+* Añadido filtro por letras en categorias block
+* Añadida funcionalidad para paginas en Post Block
 = 1.0 =
 * Addint 3 blocks: Posts, categories, directorist
 

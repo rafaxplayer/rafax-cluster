@@ -21,6 +21,7 @@ jQuery(document).ready(function ($) {
         $.ajax({
             url: phpData.ajax_url, // Define ajax_url en wp_localize_script
             type: 'POST',
+            
             data: {
                 action: 'filter_categories',
                 letter: selectedLetter,
@@ -29,9 +30,11 @@ jQuery(document).ready(function ($) {
                 showDescription: showDescription,
                 showCount: showCount,
                 targetBlank: targetBlank,
-                hideEmpty:hideEmpty
+                hideEmpty:hideEmpty,
+                security:phpData.security,
             },
             success: function (response) {
+
                 if (response.success) {
                     
                     clusterContainer.html(response.data.html);
