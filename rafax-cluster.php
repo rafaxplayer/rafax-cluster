@@ -62,9 +62,13 @@ class RafaxCluster
 						'type' => 'boolean',
 						'default' => true,
 					),
-					'contentType'=>array(
+					'contentType' => array(
 						'type' => 'string',
 						'default' => 'post'
+					),
+					'parentPage' => array(
+						'type' => 'number',
+						'default' => 0
 					),
 					'postType' => array(
 						'type' => 'string',
@@ -102,7 +106,7 @@ class RafaxCluster
 						'type' => 'string',
 						'default' => '1'
 					),
-					
+
 				),
 				'editor_script' => 'rfc_editor_script',
 				'editor_style' => 'rfc_editor-styles',
@@ -627,7 +631,10 @@ class RafaxCluster
 			'order' => sanitize_key($attributes['order']),
 		];
 
-		
+		if (!empty($attributes['parentPage'])) {
+			$args['post_parent'] = $attributes['parentPage']; // Filtrar por página padre
+		}
+
 		//var_dump($args);
 		if (empty($attributes['includePosts'])) {
 			$args['posts_per_page'] = $attributes['numberPosts'] > 0 ? (int) $attributes['numberPosts'] : -1;

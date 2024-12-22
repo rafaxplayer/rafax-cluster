@@ -24,6 +24,10 @@ registerBlockType('rafax/cluster-entradas', {
 			type: 'string',
 			default: 'post',
 		},
+		parentPage:{
+			type: 'number', // Almacena el ID de la página padre
+			default: 0,
+		},
 		includePosts: {
 			type: 'array',
 			default: [],
@@ -95,7 +99,7 @@ registerBlockType('rafax/cluster-entradas', {
 
 		const isLoading = !categories || !allPosts;
 
-		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category, contentType } = attributes;
+		const { excludePosts, includePosts, showFeaturedImage, typeSelect, numberPosts, order, orderBy, category,parentPage, contentType } = attributes;
 
 		const handleshowImage = (value) => setAttributes({ showFeaturedImage: value });
 		const handlenumberPosts = (value) => setAttributes({ numberPosts: String(value) });
@@ -167,6 +171,19 @@ registerBlockType('rafax/cluster-entradas', {
 							}
 							}
 						/>};
+						{contentType === 'page' && <SelectControl
+							label={__('Seleccionar página padre', 'rafax-cluster')}
+							value={parentPage}
+							options={[
+								{ label: __('Ninguna', 'rafax-cluster'), value: 0 }, // Opción para no filtrar
+								...(allPosts ? allPosts.map((page) => ({
+									label: page.title.rendered,
+									value: page.id,
+								})) : []),
+							]}
+							onChange={(value) => setAttributes({ parentPage: parseInt(value, 10) })}
+							__nextHasNoMarginBottom={true}
+						/>}
 
 						<SelectControl
 							label={__('Tipo de seleccion', 'rafax-cluster')}

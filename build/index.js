@@ -418,6 +418,11 @@ registerBlockType('rafax/cluster-entradas', {
       type: 'string',
       default: 'post'
     },
+    parentPage: {
+      type: 'number',
+      // Almacena el ID de la página padre
+      default: 0
+    },
     includePosts: {
       type: 'array',
       default: []
@@ -499,6 +504,7 @@ registerBlockType('rafax/cluster-entradas', {
       order,
       orderBy,
       category,
+      parentPage,
       contentType
     } = attributes;
     const handleshowImage = value => setAttributes({
@@ -578,7 +584,23 @@ registerBlockType('rafax/cluster-entradas', {
           });
         }
       }
-    }), ";", (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(SelectControl, {
+    }), ";", contentType === 'page' && (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(SelectControl, {
+      label: __('Seleccionar página padre', 'rafax-cluster'),
+      value: parentPage,
+      options: [{
+        label: __('Ninguna', 'rafax-cluster'),
+        value: 0
+      },
+      // Opción para no filtrar
+      ...(allPosts ? allPosts.map(page => ({
+        label: page.title.rendered,
+        value: page.id
+      })) : [])],
+      onChange: value => setAttributes({
+        parentPage: parseInt(value, 10)
+      }),
+      __nextHasNoMarginBottom: true
+    }), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(SelectControl, {
       label: __('Tipo de seleccion', 'rafax-cluster'),
       value: typeSelect,
       options: [{
