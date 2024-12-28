@@ -15,7 +15,7 @@
     "start": "wp-scripts start"
   },
   "devDependencies": {
-    "@wordpress/scripts": "^27.5.0"
+    "@wordpress/scripts": "^30.7.0"
   },
   "dependencies": {
     "@wordpress/icons": "^9.46.0",
@@ -136,7 +136,7 @@
     "content-disposition": "^0.5.4",
     "content-type": "^1.0.5",
     "convert-source-map": "^2.0.0",
-    "cookie": "^0.4.2",
+    "cookie": "^1.0.2",
     "cookie-signature": "^1.0.6",
     "copy-webpack-plugin": "^10.2.4",
     "core-js": "^3.36.1",
@@ -146,7 +146,7 @@
     "cosmiconfig": "^8.3.6",
     "create-jest": "^29.7.0",
     "cross-fetch": "^3.1.5",
-    "cross-spawn": "^5.1.0",
+    "cross-spawn": "^7.0.6",
     "crypto-random-string": "^2.0.0",
     "csp_evaluator": "^1.1.1",
     "css-declaration-sorter": "^7.1.1",
@@ -483,7 +483,7 @@
     "lazy-cache": "^1.0.4",
     "leven": "^3.1.0",
     "levn": "^0.4.1",
-    "lighthouse": "^10.4.0",
+    "lighthouse": "^12.3.0",
     "lighthouse-logger": "^1.4.2",
     "lighthouse-stack-packs": "^1.11.0",
     "lilconfig": "^3.1.1",
@@ -672,7 +672,7 @@
     "psl": "^1.9.0",
     "pump": "^3.0.0",
     "punycode": "^2.3.1",
-    "puppeteer-core": "^13.7.0",
+    "puppeteer-core": "^23.11.1",
     "pure-rand": "^6.1.0",
     "qs": "^6.11.0",
     "querystringify": "^2.2.0",
@@ -730,7 +730,7 @@
     "select-hose": "^2.0.0",
     "selfsigned": "^2.4.1",
     "semver": "^6.3.1",
-    "send": "^0.18.0",
+    "send": "^1.1.0",
     "sentence-case": "^3.0.4",
     "serialize-javascript": "^6.0.2",
     "serve-index": "^1.9.1",

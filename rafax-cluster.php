@@ -4,7 +4,7 @@
  * Description:       Bloques de gutemberg para crear cluster de categorias y posts.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.2
+ * Version:           1.3
  * Author:            Rafax
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -23,11 +23,9 @@ class RafaxCluster
 
 	function __construct()
 	{
-
 		add_action('init', [$this, 'init']);
 		add_action('admin_menu', [$this, 'setSettingsPage']);
 		add_filter('block_categories_all', [$this, 'customCategoryBlocks'], 10, 2);
-
 
 	}
 
@@ -36,14 +34,12 @@ class RafaxCluster
 		//enqueue scripts
 		$this->registerScripts();
 
-
 		//cargar scripts de admin para mediaupload
 		add_action('admin_enqueue_scripts', [$this, 'enqueueMediaScripts']);
 
 		// funciones ajax
 		add_action('wp_ajax_filter_categories', [$this, 'blockCategoriesCallback']);
 		add_action('wp_ajax_nopriv_filter_categories', [$this, 'blockCategoriesCallback']);
-
 
 		//Register blocks
 		if (!function_exists('register_block_type')) {
@@ -170,7 +166,6 @@ class RafaxCluster
 				'render_callback' => array($this, 'blockCategoriesCallback'),
 			)
 		);
-
 
 	}
 
@@ -322,8 +317,6 @@ class RafaxCluster
 		<input type="checkbox" id="rfc_remove_uninstall" name="rfc_options[rfc_remove_uninstall]" value="1" <?php checked(!empty($options['rfc_remove_uninstall']) ? 1 : 0); ?> />
 		<?php
 	}
-
-
 	function sectionCallback()
 	{
 		?>
@@ -337,7 +330,6 @@ class RafaxCluster
 		</ul>
 		<?php
 	}
-
 	function settingsPage()
 	{
 		if (!current_user_can('manage_options')) {
@@ -357,7 +349,6 @@ class RafaxCluster
 			</form>
 		</div><?php
 	}
-
 
 	/* REGISTER AND ENQUEUE SCRIPTS */
 	function registerScripts()
@@ -463,7 +454,6 @@ class RafaxCluster
 		// Retornar la URL de la imagen o la imagen por defecto si no se encuentra
 		return $image_url ?: $default_image_url;
 	}
-
 
 	/* Callback to register block categories and ajax categories filter*/
 	function blockCategoriesCallback($attributes, $content = null)
@@ -722,9 +712,6 @@ class RafaxCluster
 		// Unir y retornar salida
 		return implode("\n", $output);
 	}
-
-
-
 	function customCategoryBlocks($block_categories, $block_editor_context)
 	{
 		array_push(
