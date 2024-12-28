@@ -496,7 +496,7 @@ registerBlockType('rafax/cluster-entradas', {
         includePosts: [],
         excludePosts: [],
         category: 'all',
-        numberPosts: '100',
+        numberPosts: '6',
         parentPage: 0
       });
     };
@@ -651,7 +651,7 @@ registerBlockType('rafax/cluster-entradas', {
         });
       },
       __nextHasNoMarginBottom: true
-    }), (typeSelect === '1' || typeSelect === '2') && (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(RangeControl, {
+    }), (typeSelect === '1' || typeSelect === '2' || typeSelect === '4') && (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(RangeControl, {
       label: __('Numero de posts', 'rafax-cluster'),
       value: parseInt(numberPosts),
       onChange: handlenumberPosts,
