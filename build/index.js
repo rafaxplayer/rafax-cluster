@@ -481,7 +481,7 @@ registerBlockType('rafax/cluster-entradas', {
       }),
       // Categorias
       allPosts: selectCore.getEntityRecords('postType', contentType, {
-        per_page: attributes.numberPosts
+        per_page: -1
       }) // Posts o Paginas 
     };
   })(({
@@ -545,7 +545,7 @@ registerBlockType('rafax/cluster-entradas', {
         return acc;
       }, {});
 
-      // Rellenar el selector de esxcluir posts
+      // Rellenar el selector de excluir posts
       excludePostsValue = excludePosts?.map(postId => {
         let wantedPost = postsById[postId]; // Buscar el post directamente por ID
         if (!wantedPost) {

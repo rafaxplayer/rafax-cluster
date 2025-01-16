@@ -24,11 +24,11 @@ class RafaxCluster
 	function __construct()
 	{
 		add_action('init', [$this, 'init']);
+		
 		add_action('admin_menu', [$this, 'setSettingsPage']);
 		add_filter('block_categories_all', [$this, 'customCategoryBlocks'], 10, 2);
 
 	}
-
 	function init()
 	{
 		//enqueue scripts
@@ -40,6 +40,10 @@ class RafaxCluster
 		// funciones ajax
 		add_action('wp_ajax_filter_categories', [$this, 'blockCategoriesCallback']);
 		add_action('wp_ajax_nopriv_filter_categories', [$this, 'blockCategoriesCallback']);
+
+		//metabox
+		add_action('add_meta_boxes', [$this,'custom_add_metabox']);
+		add_action('save_post', [$this,'custom_save_metabox']);
 
 		//Register blocks
 		if (!function_exists('register_block_type')) {
@@ -223,6 +227,47 @@ class RafaxCluster
 
 	}
 
+	//Metabox para titulos
+	function custom_add_metabox() {
+		// Añadir metabox para "post" y "page"
+		add_meta_box(
+			'custom_cluster_title',             // ID del metabox
+			__('Rafax Cluster', 'rafax-cluster'), // Título del metabox
+			[$this,'custom_metabox_content'],           // Callback que mostrará el contenido
+			['post', 'page'],                   // Tipos de contenido donde aparecerá (entradas y páginas)
+			'side',                             // Contexto donde aparecerá el metabox ('normal', 'side', 'advanced')
+			'default'                           // Prioridad del metabox ('high', 'default', 'low')
+		);
+	}
+
+	function custom_metabox_content($post) {
+		// Recuperar el valor guardado del título personalizado
+		$custom_title = get_post_meta($post->ID, '_custom_cluster_title', true);
+		wp_nonce_field('custom_cluster_title_nonce', 'custom_cluster_title_nonce_field');
+	
+		echo '<label for="custom_cluster_title">' . __('Título en el Cluster:', 'rafax-cluster') . '</label>';
+		echo '<input type="text" id="custom_cluster_title" name="custom_cluster_title" value="' . esc_attr($custom_title) . '" class="widefat" />';
+	}
+
+	function custom_save_metabox($post_id) {
+		// Verificar nonce para asegurar que la solicitud es válida
+		if (!isset($_POST['custom_cluster_title_nonce_field']) || !wp_verify_nonce($_POST['custom_cluster_title_nonce_field'], 'custom_cluster_title_nonce')) {
+			return $post_id;
+		}
+	
+		// No guardar si el post está en autosave
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+			return $post_id;
+		}
+	
+		// Verificar si el campo está presente en la solicitud
+		if (isset($_POST['custom_cluster_title'])) {
+			// Guardar el título personalizado
+			update_post_meta($post_id, '_custom_cluster_title', sanitize_text_field($_POST['custom_cluster_title']));
+		}
+	}
+	
+
 	// Callback para renderizar el campo de la imagen personalizada
 	function customImageOption()
 	{
@@ -272,12 +317,9 @@ class RafaxCluster
 		</script>
 		<?php
 	}
-
 	function imagesSizeOption()
 	{
-
 		$options = get_option('rfc_options');
-
 		?>
 
 		<select name="rfc_options[rfc_images_size]" id="rfc_images_size">
@@ -682,7 +724,8 @@ class RafaxCluster
 			$post_classes = 'post-grid-item vertical';
 			$post_link = esc_url(get_the_permalink());
 			$post_id = esc_attr(get_the_ID());
-			$post_title = esc_html(get_the_title());
+			$custom_title = get_post_meta($post_id, '_custom_cluster_title', true);
+    		$post_title = $custom_title ? $custom_title : get_the_title(); 
 
 			$output[] = "<a id=\"{$post_id}\" href=\"{$post_link}\" class=\"{$post_classes}\">";
 
@@ -698,7 +741,7 @@ class RafaxCluster
 
 			// Mostrar contenido del post
 			$output[] = '<div class="content">';
-			$output[] = '<div class="title"><h3>' . $post_title . '</h3></div>';
+			$output[] = '<div class="title"><h3>' . esc_html($post_title) . '</h3></div>';
 			$output[] = '</div>';
 
 			$output[] = '</a>';

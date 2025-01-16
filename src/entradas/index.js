@@ -76,7 +76,7 @@ registerBlockType('rafax/cluster-entradas', {
 		return {
 			// todas categorias o posts para el selector FormTokenField
 			categories: selectCore.getEntityRecords('taxonomy', 'category', { per_page: -1 }),// Categorias
-			allPosts: selectCore.getEntityRecords('postType', contentType, { per_page: attributes.numberPosts }),// Posts o Paginas 
+			allPosts: selectCore.getEntityRecords('postType', contentType, { per_page: -1 }),// Posts o Paginas 
 		};
 
 	})(({ categories, allPosts, attributes, setAttributes }) => {
@@ -124,7 +124,7 @@ registerBlockType('rafax/cluster-entradas', {
 				return acc;
 			}, {});
 
-			// Rellenar el selector de esxcluir posts
+			// Rellenar el selector de excluir posts
 			excludePostsValue = excludePosts?.map((postId) => {
 				let wantedPost = postsById[postId]; // Buscar el post directamente por ID
 				if (!wantedPost) {
